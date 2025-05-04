@@ -6,6 +6,7 @@ import { useTimer } from '@/contexts/TimerContext';
 import { Card } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
+import { Switch } from '@/components/ui/switch';
 import { Clock } from 'lucide-react';
 
 const TimerSettings: React.FC = () => {
