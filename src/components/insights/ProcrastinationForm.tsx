@@ -62,7 +62,7 @@ const ProcrastinationForm: React.FC = () => {
             <SelectValue placeholder="Select a task" />
           </SelectTrigger>
           <SelectContent>
-            <SelectItem value="">None</SelectItem>
+            <SelectItem value="none">None</SelectItem>
             {incompleteTasks.map((task) => (
               <SelectItem key={task.id} value={task.id}>
                 {task.title}
