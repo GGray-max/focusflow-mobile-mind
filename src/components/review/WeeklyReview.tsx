@@ -23,24 +23,24 @@ const WeeklyReview: React.FC = () => {
     
     return days.map(day => {
       // Find focus sessions for this day
-      const dayFocusSessions = timerState.focusSessions.filter(session => 
+      const dayFocusSessions = timerState.focusSessions ? timerState.focusSessions.filter(session => 
         isSameDay(new Date(session.date), day)
-      );
+      ) : [];
       
       // Calculate total focus time in hours
       const focusHours = dayFocusSessions.reduce((total, session) => 
         total + session.duration / 3600, 0);
       
       // Count completed tasks for this day
-      const completedTasks = tasks.filter(task => {
+      const completedTasks = tasks ? tasks.filter(task => {
         const taskDate = task.completedAt ? new Date(task.completedAt) : null;
         return taskDate && isSameDay(taskDate, day);
-      }).length;
+      }).length : 0;
       
       // Count procrastination entries for this day
-      const procrastinationCount = entries.filter(entry =>
+      const procrastinationCount = entries ? entries.filter(entry =>
         isSameDay(new Date(entry.timestamp), day)
-      ).length;
+      ).length : 0;
       
       return {
         day: format(day, 'EEE'),

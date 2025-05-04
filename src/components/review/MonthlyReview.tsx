@@ -32,24 +32,30 @@ const MonthlyReview: React.FC = () => {
       
       // Calculate focus hours for the week
       const weekFocusTime = timerState.focusSessions
-        .filter(session => {
-          const sessionDate = new Date(session.date);
-          return isWithinInterval(sessionDate, { start: weekStart, end: weekEnd });
-        })
-        .reduce((total, session) => total + session.duration / 3600, 0);
+        ? timerState.focusSessions
+            .filter(session => {
+              const sessionDate = new Date(session.date);
+              return isWithinInterval(sessionDate, { start: weekStart, end: weekEnd });
+            })
+            .reduce((total, session) => total + session.duration / 3600, 0)
+        : 0;
       
       // Count completed tasks for the week
-      const weekCompletedTasks = tasks.filter(task => {
-        if (!task.completed || !task.completedAt) return false;
-        const completedDate = new Date(task.completedAt);
-        return isWithinInterval(completedDate, { start: weekStart, end: weekEnd });
-      }).length;
+      const weekCompletedTasks = tasks
+        ? tasks.filter(task => {
+            if (!task.completed || !task.completedAt) return false;
+            const completedDate = new Date(task.completedAt);
+            return isWithinInterval(completedDate, { start: weekStart, end: weekEnd });
+          }).length
+        : 0;
       
       // Count procrastination entries for the week
-      const weekProcrastination = entries.filter(entry => {
-        const entryDate = new Date(entry.timestamp);
-        return isWithinInterval(entryDate, { start: weekStart, end: weekEnd });
-      }).length;
+      const weekProcrastination = entries
+        ? entries.filter(entry => {
+            const entryDate = new Date(entry.timestamp);
+            return isWithinInterval(entryDate, { start: weekStart, end: weekEnd });
+          }).length
+        : 0;
       
       return {
         week: `W${index + 1}`,
@@ -65,26 +71,34 @@ const MonthlyReview: React.FC = () => {
   const tasksByCategory = useMemo(() => {
     const categoryCounts: Record<string, number> = {};
     
-    tasks.forEach(task => {
-      if (task.completed && task.completedAt) {
-        const completedDate = new Date(task.completedAt);
-        const monthStart = startOfMonth(new Date());
-        const monthEnd = endOfMonth(new Date());
-        
-        if (isWithinInterval(completedDate, { start: monthStart, end: monthEnd })) {
-          task.tags.forEach(tag => {
-            if (!categoryCounts[tag]) categoryCounts[tag] = 0;
-            categoryCounts[tag]++;
-          });
+    if (tasks) {
+      tasks.forEach(task => {
+        if (task.completed && task.completedAt) {
+          const completedDate = new Date(task.completedAt);
+          const monthStart = startOfMonth(new Date());
+          const monthEnd = endOfMonth(new Date());
           
-          // If no tags, count as "Uncategorized"
-          if (task.tags.length === 0) {
-            if (!categoryCounts["Uncategorized"]) categoryCounts["Uncategorized"] = 0;
-            categoryCounts["Uncategorized"]++;
+          if (isWithinInterval(completedDate, { start: monthStart, end: monthEnd })) {
+            if (task.tags && Array.isArray(task.tags)) {
+              task.tags.forEach(tag => {
+                if (!categoryCounts[tag]) categoryCounts[tag] = 0;
+                categoryCounts[tag]++;
+              });
+              
+              // If no tags, count as "Uncategorized"
+              if (task.tags.length === 0) {
+                if (!categoryCounts["Uncategorized"]) categoryCounts["Uncategorized"] = 0;
+                categoryCounts["Uncategorized"]++;
+              }
+            } else {
+              // Handle case where task.tags is undefined
+              if (!categoryCounts["Uncategorized"]) categoryCounts["Uncategorized"] = 0;
+              categoryCounts["Uncategorized"]++;
+            }
           }
         }
-      }
-    });
+      });
+    }
     
     return Object.keys(categoryCounts).map(category => ({
       name: category,
@@ -187,13 +201,15 @@ const MonthlyReview: React.FC = () => {
           <div className="bg-gray-50 dark:bg-gray-800 p-3 rounded-md">
             <p className="text-gray-500 text-sm">Focus Sessions</p>
             <p className="text-2xl font-bold">
-              {timerState.focusSessions.filter(session => {
-                const sessionDate = new Date(session.date);
-                return isWithinInterval(sessionDate, {
-                  start: startOfMonth(new Date()),
-                  end: endOfMonth(new Date())
-                });
-              }).length}
+              {timerState.focusSessions 
+                ? timerState.focusSessions.filter(session => {
+                    const sessionDate = new Date(session.date);
+                    return isWithinInterval(sessionDate, {
+                      start: startOfMonth(new Date()),
+                      end: endOfMonth(new Date())
+                    });
+                  }).length
+                : 0}
             </p>
           </div>
           <div className="bg-gray-50 dark:bg-gray-800 p-3 rounded-md">
