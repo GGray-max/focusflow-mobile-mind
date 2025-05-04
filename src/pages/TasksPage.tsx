@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import MobileLayout from '@/components/layout/MobileLayout';
 import { Button } from '@/components/ui/button';
@@ -8,6 +7,7 @@ import TaskItem from '@/components/tasks/TaskItem';
 import AddTaskDialog from '@/components/tasks/AddTaskDialog';
 import TaskDetailDialog from '@/components/tasks/TaskDetailDialog';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { cn } from '@/lib/utils';
 
 const TasksPage: React.FC = () => {
   const [isAddTaskDialogOpen, setIsAddTaskDialogOpen] = useState(false);
