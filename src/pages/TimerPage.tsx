@@ -10,6 +10,7 @@ import { useTasks } from '@/contexts/TaskContext';
 import { Button } from '@/components/ui/button';
 import { useNavigate } from 'react-router-dom';
 import { useTimer } from '@/contexts/TimerContext';
+import { motion } from 'framer-motion';
 
 const TimerPage: React.FC = () => {
   const { state: { tasks } } = useTasks();
@@ -27,17 +28,30 @@ const TimerPage: React.FC = () => {
   
   return (
     <MobileLayout>
-      <div className="text-center mb-6">
+      <motion.div 
+        className="text-center mb-6"
+        initial={{ opacity: 0, y: -20 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.5 }}
+      >
         <h1 className="text-2xl font-bold bg-gradient-to-r from-focus-400 to-focus-300 text-transparent bg-clip-text">Focus Timer</h1>
         <p className="text-gray-500 text-sm">Stay focused and grow your tree</p>
-      </div>
+      </motion.div>
       
       <div className="flex flex-col items-center">
         <TimerDisplay />
-        <VirtualTree />
+        
+        <motion.div
+          initial={{ opacity: 0, scale: 0.8 }}
+          animate={{ opacity: 1, scale: 1 }}
+          transition={{ delay: 0.2, type: "spring", stiffness: 300 }}
+          className="w-full"
+        >
+          <VirtualTree />
+        </motion.div>
       </div>
       
-      <Tabs defaultValue="focus" className="mt-8">
+      <Tabs defaultValue="focus" className="mt-6">
         <TabsList className="grid w-full grid-cols-2">
           <TabsTrigger value="focus">Timer</TabsTrigger>
           <TabsTrigger value="settings">Settings</TabsTrigger>
@@ -47,32 +61,48 @@ const TimerPage: React.FC = () => {
           <DistractionBlocker />
           
           {priorityTasks.length > 0 && (
-            <div className="mt-6">
+            <motion.div 
+              className="mt-6"
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              transition={{ delay: 0.4 }}
+            >
               <h3 className="text-sm font-medium text-gray-500 mb-3">Focus suggestions:</h3>
               <div className="space-y-2">
-                {priorityTasks.map(task => (
-                  <Button
+                {priorityTasks.map((task, index) => (
+                  <motion.div 
                     key={task.id}
-                    variant="outline"
-                    className="w-full justify-start text-left h-auto py-3"
-                    onClick={() => handleTaskSelect(task.title)}
+                    initial={{ opacity: 0, x: -10 }}
+                    animate={{ opacity: 1, x: 0 }}
+                    transition={{ delay: 0.5 + (index * 0.1) }}
                   >
-                    <div>
-                      <p>{task.title}</p>
-                      {task.subtasks.length > 0 && (
-                        <p className="text-xs text-gray-500 mt-1">
-                          {task.subtasks.filter(st => !st.completed).length} subtasks remaining
-                        </p>
-                      )}
-                    </div>
-                  </Button>
+                    <Button
+                      variant="outline"
+                      className="w-full justify-start text-left h-auto py-3"
+                      onClick={() => handleTaskSelect(task.title)}
+                    >
+                      <div>
+                        <p>{task.title}</p>
+                        {task.subtasks.length > 0 && (
+                          <p className="text-xs text-gray-500 mt-1">
+                            {task.subtasks.filter(st => !st.completed).length} subtasks remaining
+                          </p>
+                        )}
+                      </div>
+                    </Button>
+                  </motion.div>
                 ))}
               </div>
-            </div>
+            </motion.div>
           )}
           
           {priorityTasks.length === 0 && (
-            <div className="mt-6 bg-gray-50 dark:bg-gray-800 p-4 rounded-lg">
+            <motion.div 
+              className="mt-6 bg-gray-50 dark:bg-gray-800 p-4 rounded-lg"
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              transition={{ delay: 0.4 }}
+            >
               <h3 className="font-medium">No priority tasks</h3>
               <p className="text-sm text-gray-500 mt-1">
                 Mark important tasks as priority to see them here
@@ -84,7 +114,7 @@ const TimerPage: React.FC = () => {
               >
                 View All Tasks
               </Button>
-            </div>
+            </motion.div>
           )}
         </TabsContent>
         
