@@ -1,85 +1,61 @@
 
-import React from 'react';
-import { useLocation, Link } from 'react-router-dom';
-import { LayoutGrid, Clock, BarChart3, Settings } from 'lucide-react';
-import { cn } from '@/lib/utils';
-import { useTimer } from '@/contexts/TimerContext';
+import React, { ReactNode } from 'react';
+import { useNavigate, useLocation } from 'react-router-dom';
+import { AnimatePresence, motion } from 'framer-motion';
+import { ListTodo, Clock, BarChart, Settings, PieChart } from 'lucide-react';
 
 interface MobileLayoutProps {
-  children: React.ReactNode;
+  children: ReactNode;
 }
 
 const MobileLayout: React.FC<MobileLayoutProps> = ({ children }) => {
+  const navigate = useNavigate();
   const location = useLocation();
-  const { state: timerState } = useTimer();
-  const pathname = location.pathname;
-  
-  const isTimerRunning = timerState.isRunning;
+
+  // Navigation items
+  const navItems = [
+    { path: '/tasks', Icon: ListTodo, label: 'Tasks' },
+    { path: '/timer', Icon: Clock, label: 'Timer' },
+    { path: '/insights', Icon: BarChart, label: 'Insights' },
+    { path: '/review', Icon: PieChart, label: 'Review' },
+    { path: '/settings', Icon: Settings, label: 'Settings' },
+  ];
 
   return (
-    <div className="flex flex-col min-h-screen max-w-md mx-auto bg-gray-50 dark:bg-gray-900">
-      <div className="flex-1 px-4 py-6 overflow-auto pb-20 bg-gradient-to-b from-white to-gray-50 dark:from-gray-900 dark:to-gray-800">
-        {children}
-      </div>
+    <div className="max-w-md mx-auto min-h-screen flex flex-col bg-background">
+      <main className="flex-1 p-4 pb-20 overflow-auto">
+        <AnimatePresence mode="wait">
+          <motion.div
+            key={location.pathname}
+            initial={{ opacity: 0, y: 10 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: -10 }}
+            transition={{ duration: 0.2 }}
+            className="h-full"
+          >
+            {children}
+          </motion.div>
+        </AnimatePresence>
+      </main>
       
-      {/* Bottom Navigation */}
-      <nav className="fixed bottom-0 left-0 right-0 bg-white dark:bg-gray-900 border-t border-gray-100 dark:border-gray-800 max-w-md mx-auto shadow-lg rounded-t-xl">
-        <div className="flex justify-around items-center h-16">
-          <Link
-            to="/tasks"
-            className={cn(
-              "flex flex-col items-center justify-center w-full py-1 rounded-md mx-1 transition-all",
-              pathname === '/tasks' 
-                ? "text-focus-400 bg-focus-100 dark:bg-focus-400/10" 
-                : "text-gray-500 hover:text-focus-300 hover:bg-gray-50 dark:hover:bg-gray-800"
-            )}
-          >
-            <LayoutGrid size={20} strokeWidth={2} />
-            <span className="text-xs mt-1 font-medium">Tasks</span>
-          </Link>
-          
-          <Link
-            to="/timer"
-            className={cn(
-              "flex flex-col items-center justify-center w-full py-1 rounded-md mx-1 transition-all relative",
-              pathname === '/timer' 
-                ? "text-focus-400 bg-focus-100 dark:bg-focus-400/10" 
-                : "text-gray-500 hover:text-focus-300 hover:bg-gray-50 dark:hover:bg-gray-800",
-              isTimerRunning && "text-focus-400"
-            )}
-          >
-            <Clock size={20} strokeWidth={2} />
-            <span className="text-xs mt-1 font-medium">Timer</span>
-            {isTimerRunning && (
-              <span className="absolute top-1 right-6 h-2.5 w-2.5 rounded-full bg-focus-400 animate-pulse-gentle"></span>
-            )}
-          </Link>
-          
-          <Link
-            to="/insights"
-            className={cn(
-              "flex flex-col items-center justify-center w-full py-1 rounded-md mx-1 transition-all",
-              pathname === '/insights' 
-                ? "text-focus-400 bg-focus-100 dark:bg-focus-400/10" 
-                : "text-gray-500 hover:text-focus-300 hover:bg-gray-50 dark:hover:bg-gray-800"
-            )}
-          >
-            <BarChart3 size={20} strokeWidth={2} />
-            <span className="text-xs mt-1 font-medium">Insights</span>
-          </Link>
-          
-          <Link
-            to="/settings"
-            className={cn(
-              "flex flex-col items-center justify-center w-full py-1 rounded-md mx-1 transition-all",
-              pathname === '/settings' 
-                ? "text-focus-400 bg-focus-100 dark:bg-focus-400/10" 
-                : "text-gray-500 hover:text-focus-300 hover:bg-gray-50 dark:hover:bg-gray-800"
-            )}
-          >
-            <Settings size={20} strokeWidth={2} />
-            <span className="text-xs mt-1 font-medium">Settings</span>
-          </Link>
+      <nav className="fixed bottom-0 left-0 right-0 bg-white dark:bg-gray-900 border-t border-gray-200 dark:border-gray-800 px-4 py-2 z-10">
+        <div className="max-w-md mx-auto">
+          <div className="flex justify-between">
+            {navItems.map(({ path, Icon, label }) => (
+              <button
+                key={path}
+                className={`flex flex-col items-center justify-center flex-grow py-1 ${
+                  location.pathname === path 
+                    ? 'text-focus-400'
+                    : 'text-gray-500 hover:text-gray-800 dark:hover:text-gray-300'
+                }`}
+                onClick={() => navigate(path)}
+              >
+                <Icon size={20} className={location.pathname === path ? 'animate-pulse' : ''} />
+                <span className="text-[10px] mt-1">{label}</span>
+              </button>
+            ))}
+          </div>
         </div>
       </nav>
     </div>

@@ -14,6 +14,7 @@ import TasksPage from "./pages/TasksPage";
 import TimerPage from "./pages/TimerPage";
 import InsightsPage from "./pages/InsightsPage";
 import SettingsPage from "./pages/SettingsPage";
+import ReviewPage from "./pages/ReviewPage";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -33,6 +34,7 @@ const App = () => (
                 <Route path="/timer" element={<TimerPage />} />
                 <Route path="/insights" element={<InsightsPage />} />
                 <Route path="/settings" element={<SettingsPage />} />
+                <Route path="/review" element={<ReviewPage />} />
                 <Route path="*" element={<NotFound />} />
               </Routes>
             </BrowserRouter>

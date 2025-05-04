@@ -4,6 +4,15 @@ import { toast } from '@/components/ui/use-toast';
 
 type TimerMode = 'focus' | 'break' | 'idle';
 
+// New interface for tracking focus sessions
+interface FocusSession {
+  id: string;
+  date: string; // ISO string
+  duration: number; // in seconds
+  task: string | null;
+  completed: boolean;
+}
+
 interface TimerState {
   mode: TimerMode;
   timeLeft: number; // in seconds
@@ -12,9 +21,12 @@ interface TimerState {
   breakDuration: number; // in minutes
   sessionsCompleted: number;
   currentTask: string | null;
-  treeHealth: number; // New: track tree health
-  streakDays: number; // New: track consecutive days of completed sessions
-  lastActiveDay: string | null; // New: track last day user completed a session
+  treeHealth: number; // Tree health
+  streakDays: number; // Track consecutive days of completed sessions
+  lastActiveDay: string | null; // Track last day user completed a session
+  focusSessions: FocusSession[]; // Track focus sessions
+  totalFocusTime: number; // Total seconds spent focusing
+  sessionStartTime: number | null; // Timestamp when session started
 }
 
 type TimerAction =
@@ -30,6 +42,7 @@ type TimerAction =
   | { type: 'UPDATE_TREE_HEALTH'; payload: number }
   | { type: 'RESET_TREE_HEALTH' }
   | { type: 'UPDATE_STREAK' }
+  | { type: 'LOG_FOCUS_SESSION'; payload: { duration: number; task: string | null; completed: boolean } }
   | { type: 'LOAD_STATE'; payload: TimerState };
 
 const DEFAULT_FOCUS_DURATION = 25; // 25 minutes
@@ -46,6 +59,9 @@ const initialState: TimerState = {
   treeHealth: 100,
   streakDays: 0,
   lastActiveDay: null,
+  focusSessions: [],
+  totalFocusTime: 0,
+  sessionStartTime: null,
 };
 
 const timerReducer = (state: TimerState, action: TimerAction): TimerState => {
@@ -56,11 +72,34 @@ const timerReducer = (state: TimerState, action: TimerAction): TimerState => {
         isRunning: true,
         mode: state.mode === 'idle' ? 'focus' : state.mode,
         currentTask: action.payload?.task || state.currentTask,
+        sessionStartTime: state.sessionStartTime || Date.now(),
       };
     case 'PAUSE_TIMER':
+      // When pausing, log the partial session if we were in focus mode
+      if (state.mode === 'focus' && state.sessionStartTime) {
+        const sessionDuration = Math.floor((Date.now() - state.sessionStartTime) / 1000);
+        if (sessionDuration > 10) { // Only log if more than 10 seconds
+          const newSession: FocusSession = {
+            id: `session-${Date.now()}`,
+            date: new Date().toISOString(),
+            duration: sessionDuration,
+            task: state.currentTask,
+            completed: false
+          };
+          
+          return {
+            ...state,
+            isRunning: false,
+            focusSessions: [...state.focusSessions, newSession],
+            totalFocusTime: state.totalFocusTime + sessionDuration,
+            sessionStartTime: null
+          };
+        }
+      }
       return {
         ...state,
         isRunning: false,
+        sessionStartTime: null
       };
     case 'RESET_TIMER':
       return {
@@ -69,6 +108,7 @@ const timerReducer = (state: TimerState, action: TimerAction): TimerState => {
         isRunning: false,
         timeLeft: state.focusDuration * 60,
         currentTask: null,
+        sessionStartTime: null
       };
     case 'TICK':
       if (state.timeLeft <= 1) {
@@ -78,6 +118,15 @@ const timerReducer = (state: TimerState, action: TimerAction): TimerState => {
           const today = new Date().toISOString().split('T')[0];
           const isNewStreak = state.lastActiveDay !== today;
           
+          // Log the completed focus session
+          const newSession: FocusSession = {
+            id: `session-${Date.now()}`,
+            date: new Date().toISOString(),
+            duration: state.focusDuration * 60,
+            task: state.currentTask,
+            completed: true
+          };
+          
           return {
             ...state,
             isRunning: false,
@@ -86,6 +135,9 @@ const timerReducer = (state: TimerState, action: TimerAction): TimerState => {
             sessionsCompleted: state.sessionsCompleted + 1,
             lastActiveDay: today,
             streakDays: isNewStreak ? state.streakDays + 1 : state.streakDays,
+            focusSessions: [...state.focusSessions, newSession],
+            totalFocusTime: state.totalFocusTime + (state.focusDuration * 60),
+            sessionStartTime: null
           };
         } else if (state.mode === 'break') {
           return {
@@ -93,6 +145,7 @@ const timerReducer = (state: TimerState, action: TimerAction): TimerState => {
             isRunning: false,
             mode: 'focus',
             timeLeft: state.focusDuration * 60,
+            sessionStartTime: null
           };
         }
       }
@@ -105,6 +158,7 @@ const timerReducer = (state: TimerState, action: TimerAction): TimerState => {
         ...state,
         sessionsCompleted: state.sessionsCompleted + 1,
         isRunning: false,
+        sessionStartTime: null
       };
     case 'SWITCH_TO_BREAK':
       return {
@@ -112,6 +166,7 @@ const timerReducer = (state: TimerState, action: TimerAction): TimerState => {
         mode: 'break',
         isRunning: false,
         timeLeft: state.breakDuration * 60,
+        sessionStartTime: null
       };
     case 'SWITCH_TO_FOCUS':
       return {
@@ -119,6 +174,7 @@ const timerReducer = (state: TimerState, action: TimerAction): TimerState => {
         mode: 'focus',
         isRunning: false,
         timeLeft: state.focusDuration * 60,
+        sessionStartTime: null
       };
     case 'SET_FOCUS_DURATION':
       return {
@@ -150,6 +206,20 @@ const timerReducer = (state: TimerState, action: TimerAction): TimerState => {
         ...state,
         lastActiveDay: today,
         streakDays: isNewDay ? state.streakDays + 1 : state.streakDays,
+      };
+    case 'LOG_FOCUS_SESSION':
+      const newFocusSession: FocusSession = {
+        id: `session-${Date.now()}`,
+        date: new Date().toISOString(),
+        duration: action.payload.duration,
+        task: action.payload.task,
+        completed: action.payload.completed
+      };
+      
+      return {
+        ...state,
+        focusSessions: [...state.focusSessions, newFocusSession],
+        totalFocusTime: state.totalFocusTime + action.payload.duration,
       };
     case 'LOAD_STATE':
       return action.payload;

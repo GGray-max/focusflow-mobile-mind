@@ -7,6 +7,7 @@ export interface Task {
   description?: string;
   completed: boolean;
   createdAt: string;
+  completedAt?: string; // New: track when tasks are completed
   dueDate?: string;
   priority: 'low' | 'medium' | 'high';
   tags: string[];
@@ -68,7 +69,11 @@ const taskReducer = (state: TaskState, action: TaskAction): TaskState => {
         ...state,
         tasks: state.tasks.map((task) =>
           task.id === action.payload
-            ? { ...task, completed: !task.completed }
+            ? { 
+                ...task, 
+                completed: !task.completed, 
+                completedAt: !task.completed ? new Date().toISOString() : undefined 
+              }
             : task
         ),
       };
