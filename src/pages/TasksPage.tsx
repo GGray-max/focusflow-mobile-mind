@@ -49,82 +49,114 @@ const TasksPage: React.FC = () => {
 
   return (
     <MobileLayout>
-      <div className="flex justify-between items-center mb-6">
-        <div>
-          <h1 className="text-2xl font-bold">FocusFlow</h1>
-          <p className="text-gray-500 text-sm">Manage your tasks</p>
-        </div>
-        
-        <div className="space-x-2">
-          <Button 
-            variant="outline" 
-            size="icon" 
-            onClick={() => setShowOnlyPriority(!showOnlyPriority)}
-            className={showOnlyPriority ? "bg-focus-100 text-focus-400" : ""}
-          >
-            <Star size={20} className={showOnlyPriority ? "fill-focus-300" : ""} />
-          </Button>
+      <div className="space-y-6">
+        <div className="flex justify-between items-center">
+          <div>
+            <h1 className="text-3xl font-bold bg-gradient-to-r from-focus-400 to-focus-300 text-transparent bg-clip-text">FocusFlow</h1>
+            <p className="text-gray-500 text-sm">Manage your tasks</p>
+          </div>
           
-          <Button onClick={() => setIsAddTaskDialogOpen(true)}>
-            <Plus size={20} className="mr-2" /> Add Task
-          </Button>
+          <div className="space-x-2 flex items-center">
+            <Button 
+              variant="outline" 
+              size="icon" 
+              onClick={() => setShowOnlyPriority(!showOnlyPriority)}
+              className={cn(
+                "rounded-full transition-all", 
+                showOnlyPriority 
+                  ? "bg-focus-100 text-focus-400 border-focus-200" 
+                  : "hover:border-focus-300 hover:text-focus-400"
+              )}
+            >
+              <Star size={18} className={showOnlyPriority ? "fill-focus-300" : ""} />
+            </Button>
+            
+            <Button 
+              onClick={() => setIsAddTaskDialogOpen(true)}
+              className="rounded-full bg-focus-400 hover:bg-focus-500 shadow-md"
+            >
+              <Plus size={18} className="mr-1" /> Add Task
+            </Button>
+          </div>
         </div>
+        
+        <Tabs defaultValue="active" className="w-full">
+          <TabsList className="grid w-full grid-cols-2 rounded-lg bg-muted mb-4">
+            <TabsTrigger 
+              value="active" 
+              className="data-[state=active]:bg-white dark:data-[state=active]:bg-gray-800 data-[state=active]:shadow-sm rounded-md"
+            >
+              Active ({incompleteTasks.length})
+            </TabsTrigger>
+            <TabsTrigger 
+              value="completed" 
+              className="data-[state=active]:bg-white dark:data-[state=active]:bg-gray-800 data-[state=active]:shadow-sm rounded-md"
+            >
+              Completed ({completedTasks.length})
+            </TabsTrigger>
+          </TabsList>
+          
+          <TabsContent value="active" className="mt-0">
+            {loading ? (
+              <div className="py-12 flex flex-col items-center justify-center space-y-3">
+                <div className="h-8 w-8 rounded-full border-4 border-focus-300 border-t-transparent animate-spin"></div>
+                <p className="text-gray-500 text-sm">Loading tasks...</p>
+              </div>
+            ) : sortedIncompleteTasks.length === 0 ? (
+              <div className="py-12 flex flex-col items-center justify-center">
+                <div className="bg-gray-100 dark:bg-gray-800 rounded-full p-4 mb-3">
+                  <Star size={30} className="text-gray-400" />
+                </div>
+                <p className="text-gray-500 text-center px-4">
+                  {showOnlyPriority 
+                    ? "No priority tasks found" 
+                    : "No active tasks found. Add a task to get started!"}
+                </p>
+              </div>
+            ) : (
+              <div className="space-y-3">
+                {sortedIncompleteTasks.map(task => (
+                  <TaskItem
+                    key={task.id}
+                    task={task}
+                    onToggleComplete={() => toggleComplete(task.id)}
+                    onTogglePriority={() => togglePriority(task.id)}
+                    onClick={() => setSelectedTask(task)}
+                  />
+                ))}
+              </div>
+            )}
+          </TabsContent>
+          
+          <TabsContent value="completed" className="mt-0">
+            {loading ? (
+              <div className="py-12 flex flex-col items-center justify-center space-y-3">
+                <div className="h-8 w-8 rounded-full border-4 border-focus-300 border-t-transparent animate-spin"></div>
+                <p className="text-gray-500 text-sm">Loading tasks...</p>
+              </div>
+            ) : completedTasks.length === 0 ? (
+              <div className="py-12 flex flex-col items-center justify-center">
+                <div className="bg-gray-100 dark:bg-gray-800 rounded-full p-4 mb-3">
+                  <Filter size={30} className="text-gray-400" />
+                </div>
+                <p className="text-gray-500">No completed tasks yet</p>
+              </div>
+            ) : (
+              <div className="space-y-3">
+                {completedTasks.map(task => (
+                  <TaskItem
+                    key={task.id}
+                    task={task}
+                    onToggleComplete={() => toggleComplete(task.id)}
+                    onTogglePriority={() => togglePriority(task.id)}
+                    onClick={() => setSelectedTask(task)}
+                  />
+                ))}
+              </div>
+            )}
+          </TabsContent>
+        </Tabs>
       </div>
-      
-      <Tabs defaultValue="active" className="w-full">
-        <TabsList className="grid w-full grid-cols-2">
-          <TabsTrigger value="active">Active ({incompleteTasks.length})</TabsTrigger>
-          <TabsTrigger value="completed">Completed ({completedTasks.length})</TabsTrigger>
-        </TabsList>
-        
-        <TabsContent value="active" className="mt-4">
-          {loading ? (
-            <div className="py-8 text-center">Loading tasks...</div>
-          ) : sortedIncompleteTasks.length === 0 ? (
-            <div className="py-8 text-center">
-              <p className="text-gray-500">
-                {showOnlyPriority 
-                  ? "No priority tasks found" 
-                  : "No active tasks found. Add a task to get started!"}
-              </p>
-            </div>
-          ) : (
-            <div className="space-y-1">
-              {sortedIncompleteTasks.map(task => (
-                <TaskItem
-                  key={task.id}
-                  task={task}
-                  onToggleComplete={() => toggleComplete(task.id)}
-                  onTogglePriority={() => togglePriority(task.id)}
-                  onClick={() => setSelectedTask(task)}
-                />
-              ))}
-            </div>
-          )}
-        </TabsContent>
-        
-        <TabsContent value="completed" className="mt-4">
-          {loading ? (
-            <div className="py-8 text-center">Loading tasks...</div>
-          ) : completedTasks.length === 0 ? (
-            <div className="py-8 text-center">
-              <p className="text-gray-500">No completed tasks yet</p>
-            </div>
-          ) : (
-            <div className="space-y-1">
-              {completedTasks.map(task => (
-                <TaskItem
-                  key={task.id}
-                  task={task}
-                  onToggleComplete={() => toggleComplete(task.id)}
-                  onTogglePriority={() => togglePriority(task.id)}
-                  onClick={() => setSelectedTask(task)}
-                />
-              ))}
-            </div>
-          )}
-        </TabsContent>
-      </Tabs>
       
       <AddTaskDialog 
         isOpen={isAddTaskDialogOpen} 

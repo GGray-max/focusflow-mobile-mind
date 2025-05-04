@@ -8,6 +8,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { useTasks } from '@/contexts/TaskContext';
 import { useProcrastination } from '@/contexts/ProcrastinationContext';
 import { toast } from '@/components/ui/use-toast';
+import { AlertTriangle } from 'lucide-react';
 
 const ProcrastinationForm: React.FC = () => {
   const [reason, setReason] = useState('');
@@ -29,14 +30,14 @@ const ProcrastinationForm: React.FC = () => {
       return;
     }
     
-    const taskName = selectedTaskId 
+    const taskName = selectedTaskId && selectedTaskId !== 'none'
       ? tasks.find(task => task.id === selectedTaskId)?.title 
       : undefined;
     
     addEntry({
       reason: reason.trim(),
       mood,
-      taskId: selectedTaskId || undefined,
+      taskId: selectedTaskId !== 'none' ? selectedTaskId : undefined,
       taskName,
     });
     
@@ -53,12 +54,20 @@ const ProcrastinationForm: React.FC = () => {
   
   const incompleteTasks = tasks.filter(task => !task.completed);
   
+  const moodOptions = [
+    { value: 'frustrated', label: 'Frustrated', bgColor: 'bg-red-100 dark:bg-red-900/20', iconColor: 'text-red-500' },
+    { value: 'bored', label: 'Bored', bgColor: 'bg-yellow-100 dark:bg-yellow-900/20', iconColor: 'text-yellow-500' },
+    { value: 'anxious', label: 'Anxious', bgColor: 'bg-purple-100 dark:bg-purple-900/20', iconColor: 'text-purple-500' },
+    { value: 'tired', label: 'Tired', bgColor: 'bg-blue-100 dark:bg-blue-900/20', iconColor: 'text-blue-500' },
+    { value: 'distracted', label: 'Distracted', bgColor: 'bg-green-100 dark:bg-green-900/20', iconColor: 'text-green-500' },
+  ];
+
   return (
-    <form onSubmit={handleSubmit} className="space-y-4">
+    <form onSubmit={handleSubmit} className="space-y-6 bg-white dark:bg-gray-800 rounded-xl p-6 shadow-md">
       <div className="space-y-2">
-        <Label htmlFor="task">Related to Task (Optional)</Label>
+        <Label htmlFor="task" className="text-sm font-medium">Related to Task (Optional)</Label>
         <Select value={selectedTaskId} onValueChange={setSelectedTaskId}>
-          <SelectTrigger>
+          <SelectTrigger className="w-full bg-gray-50 dark:bg-gray-900 border-gray-200 dark:border-gray-700">
             <SelectValue placeholder="Select a task" />
           </SelectTrigger>
           <SelectContent>
@@ -73,43 +82,48 @@ const ProcrastinationForm: React.FC = () => {
       </div>
       
       <div className="space-y-2">
-        <Label htmlFor="reason">Why do you feel like procrastinating?</Label>
+        <Label htmlFor="reason" className="text-sm font-medium">Why do you feel like procrastinating?</Label>
         <Textarea
           id="reason"
           value={reason}
           onChange={(e) => setReason(e.target.value)}
           placeholder="I feel like procrastinating because..."
           rows={3}
+          className="resize-none bg-gray-50 dark:bg-gray-900 border-gray-200 dark:border-gray-700 focus:ring-focus-400 focus:border-focus-400"
         />
       </div>
       
-      <div className="space-y-2">
-        <Label>How do you feel right now?</Label>
-        <RadioGroup value={mood} onValueChange={(value) => setMood(value as any)} className="flex flex-wrap gap-2">
-          <div className="flex items-center space-x-2 bg-red-100 px-3 py-2 rounded-md">
-            <RadioGroupItem value="frustrated" id="frustrated" />
-            <Label htmlFor="frustrated" className="cursor-pointer">Frustrated</Label>
-          </div>
-          <div className="flex items-center space-x-2 bg-yellow-100 px-3 py-2 rounded-md">
-            <RadioGroupItem value="bored" id="bored" />
-            <Label htmlFor="bored" className="cursor-pointer">Bored</Label>
-          </div>
-          <div className="flex items-center space-x-2 bg-purple-100 px-3 py-2 rounded-md">
-            <RadioGroupItem value="anxious" id="anxious" />
-            <Label htmlFor="anxious" className="cursor-pointer">Anxious</Label>
-          </div>
-          <div className="flex items-center space-x-2 bg-blue-100 px-3 py-2 rounded-md">
-            <RadioGroupItem value="tired" id="tired" />
-            <Label htmlFor="tired" className="cursor-pointer">Tired</Label>
-          </div>
-          <div className="flex items-center space-x-2 bg-green-100 px-3 py-2 rounded-md">
-            <RadioGroupItem value="distracted" id="distracted" />
-            <Label htmlFor="distracted" className="cursor-pointer">Distracted</Label>
-          </div>
+      <div className="space-y-3">
+        <Label className="text-sm font-medium">How do you feel right now?</Label>
+        <RadioGroup 
+          value={mood} 
+          onValueChange={(value) => setMood(value as any)} 
+          className="grid grid-cols-2 gap-3 sm:flex sm:flex-wrap sm:gap-2"
+        >
+          {moodOptions.map(option => (
+            <div 
+              key={option.value}
+              className={`flex items-center space-x-2 ${option.bgColor} px-4 py-3 rounded-lg transition-transform hover:scale-105`}
+            >
+              <RadioGroupItem value={option.value} id={option.value} className="text-focus-400" />
+              <Label 
+                htmlFor={option.value} 
+                className="cursor-pointer font-medium flex items-center"
+              >
+                <AlertTriangle className={`h-3.5 w-3.5 mr-1.5 ${option.iconColor}`} />
+                {option.label}
+              </Label>
+            </div>
+          ))}
         </RadioGroup>
       </div>
       
-      <Button type="submit" className="w-full">Log Procrastination Feeling</Button>
+      <Button 
+        type="submit" 
+        className="w-full py-6 text-base font-medium bg-focus-400 hover:bg-focus-500 transition-all shadow-md hover:shadow-lg"
+      >
+        Log Procrastination Feeling
+      </Button>
     </form>
   );
 };

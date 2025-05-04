@@ -3,7 +3,7 @@ import React from 'react';
 import { Task } from '@/contexts/TaskContext';
 import { Checkbox } from '@/components/ui/checkbox';
 import { cn } from '@/lib/utils';
-import { Star, ChevronRight } from 'lucide-react';
+import { Star, ChevronRight, Calendar } from 'lucide-react';
 import { format } from 'date-fns';
 
 interface TaskItemProps {
@@ -35,19 +35,26 @@ const TaskItem: React.FC<TaskItemProps> = ({
     : task.completed 
       ? 100 
       : 0;
+      
+  const priorityColors = {
+    high: 'border-red-400 bg-red-100 dark:bg-red-900/20',
+    medium: 'border-yellow-400 bg-yellow-50 dark:bg-yellow-900/20',
+    low: 'border-blue-400 bg-blue-50 dark:bg-blue-900/20'
+  };
 
   return (
     <div 
       className={cn(
-        "bg-white dark:bg-gray-800 rounded-lg p-4 mb-3 shadow-sm border border-gray-100 dark:border-gray-700",
-        "transition-all duration-200 hover:shadow-md",
+        "bg-white dark:bg-gray-800 rounded-xl p-4 mb-3 shadow-sm border border-gray-100 dark:border-gray-700",
+        "transition-all duration-200 hover:shadow-md active:scale-99",
+        task.isPriority && !task.completed && "border-l-4 border-l-focus-400",
         task.completed && "opacity-70"
       )}
       onClick={onClick}
     >
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-3 flex-1">
-          <div onClick={handleCheckboxClick}>
+          <div onClick={handleCheckboxClick} className="flex-shrink-0">
             <Checkbox 
               checked={task.completed}
               className={cn(
@@ -58,7 +65,7 @@ const TaskItem: React.FC<TaskItemProps> = ({
               )}
             />
           </div>
-          <div className="flex-1">
+          <div className="flex-1 min-w-0">
             <h3 className={cn(
               "text-base font-medium line-clamp-1",
               task.completed && "line-through opacity-70"
@@ -67,34 +74,35 @@ const TaskItem: React.FC<TaskItemProps> = ({
             </h3>
             
             {task.subtasks.length > 0 && (
-              <div className="mt-1 flex items-center gap-2">
-                <div className="h-1 flex-1 bg-gray-200 dark:bg-gray-700 rounded-full">
+              <div className="mt-2 flex items-center gap-2">
+                <div className="h-2 flex-1 bg-gray-200 dark:bg-gray-700 rounded-full overflow-hidden">
                   <div 
                     className={cn(
-                      "h-1 rounded-full",
+                      "h-2 rounded-full transition-all duration-500",
                       progress === 100 ? "bg-green-500" : "bg-focus-400"
                     )}
                     style={{ width: `${progress}%` }}
                   />
                 </div>
-                <span className="text-xs text-gray-500">
+                <span className="text-xs text-gray-500 font-medium">
                   {task.subtasks.filter(st => st.completed).length}/{task.subtasks.length}
                 </span>
               </div>
             )}
             
             {task.dueDate && (
-              <p className="text-xs text-gray-500 mt-1">
+              <p className="text-xs text-gray-500 mt-2 flex items-center gap-1">
+                <Calendar size={12} className="inline-block" />
                 {format(new Date(task.dueDate), "MMM d")}
               </p>
             )}
           </div>
         </div>
         
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-3">
           <button 
             onClick={handleStarClick}
-            className="focus:outline-none"
+            className="focus:outline-none transform transition-transform hover:scale-110"
           >
             <Star 
               size={18} 
@@ -106,7 +114,9 @@ const TaskItem: React.FC<TaskItemProps> = ({
               )} 
             />
           </button>
-          <ChevronRight size={18} className="text-gray-400" />
+          <div className="flex items-center justify-center h-6 w-6 rounded-full bg-gray-100 dark:bg-gray-700">
+            <ChevronRight size={14} className="text-gray-400" />
+          </div>
         </div>
       </div>
     </div>
