@@ -20,30 +20,46 @@ import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
 
-const App = () => (
-  <QueryClientProvider client={queryClient}>
-    <TooltipProvider>
-      <TaskProvider>
-        <TimerProvider>
-          <ProcrastinationProvider>
-            <Toaster />
-            <Sonner />
-            <BrowserRouter>
-              <Routes>
-                <Route path="/" element={<Index />} />
-                <Route path="/tasks" element={<TasksPage />} />
-                <Route path="/timer" element={<TimerPage />} />
-                <Route path="/insights" element={<InsightsPage />} />
-                <Route path="/settings" element={<SettingsPage />} />
-                <Route path="/review" element={<ReviewPage />} />
-                <Route path="*" element={<NotFound />} />
-              </Routes>
-            </BrowserRouter>
-          </ProcrastinationProvider>
-        </TimerProvider>
-      </TaskProvider>
-    </TooltipProvider>
-  </QueryClientProvider>
-);
+const App = () => {
+  // Request notification permissions when the app starts
+  useEffect(() => {
+    const initNotifications = async () => {
+      try {
+        await NotificationService.requestPermissions();
+        console.log('Notification permissions requested');
+      } catch (error) {
+        console.error('Error requesting notification permissions:', error);
+      }
+    };
+    
+    initNotifications();
+  }, []);
+
+  return (
+    <QueryClientProvider client={queryClient}>
+      <TooltipProvider>
+        <TaskProvider>
+          <TimerProvider>
+            <ProcrastinationProvider>
+              <Toaster />
+              <Sonner />
+              <BrowserRouter>
+                <Routes>
+                  <Route path="/" element={<Index />} />
+                  <Route path="/tasks" element={<TasksPage />} />
+                  <Route path="/timer" element={<TimerPage />} />
+                  <Route path="/insights" element={<InsightsPage />} />
+                  <Route path="/settings" element={<SettingsPage />} />
+                  <Route path="/review" element={<ReviewPage />} />
+                  <Route path="*" element={<NotFound />} />
+                </Routes>
+              </BrowserRouter>
+            </ProcrastinationProvider>
+          </TimerProvider>
+        </TaskProvider>
+      </TooltipProvider>
+    </QueryClientProvider>
+  );
+};
 
 export default App;

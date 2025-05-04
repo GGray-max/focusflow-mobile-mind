@@ -23,6 +23,23 @@ args = "npm install"
 task = "shell.exec"
 args = "npm run dev"
 
+[[workflows.workflow]]
+name = "Build for Android"
+author = 42243018
+mode = "sequential"
+
+[[workflows.workflow.tasks]]
+task = "shell.exec"
+args = "npm run build"
+
+[[workflows.workflow.tasks]]
+task = "shell.exec"
+args = "npx cap sync"
+
+[[workflows.workflow.tasks]]
+task = "shell.exec"
+args = "cd android && ./gradlew assembleDebug"
+
 [[ports]]
 localPort = 8080
 externalPort = 80
