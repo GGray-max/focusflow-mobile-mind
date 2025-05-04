@@ -23,6 +23,8 @@ class NotificationService {
           body: body,
           schedule: { at: scheduledTime },
           sound: 'beep.wav',
+          smallIcon: 'ic_stat_notification',
+          iconColor: '#8B5CF6',
           autoCancel: true
         }
       ]

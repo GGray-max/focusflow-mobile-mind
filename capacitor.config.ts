@@ -8,7 +8,7 @@ const config: CapacitorConfig = {
   // Remove the server config to make it work offline
   plugins: {
     LocalNotifications: {
-      smallIcon: "ic_stat_icon_config_sample",
+      smallIcon: "ic_stat_notification",
       iconColor: "#8B5CF6",
       sound: "beep.wav",
     },
