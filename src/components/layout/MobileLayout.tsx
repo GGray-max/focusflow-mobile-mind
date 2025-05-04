@@ -27,10 +27,10 @@ const MobileLayout: React.FC<MobileLayoutProps> = ({ children }) => {
       <nav className="fixed bottom-0 left-0 right-0 bg-white dark:bg-gray-900 border-t border-gray-200 dark:border-gray-800 max-w-md mx-auto">
         <div className="flex justify-around items-center h-16">
           <Link
-            to="/"
+            to="/tasks"
             className={cn(
               "flex flex-col items-center justify-center w-full py-2",
-              pathname === '/' ? "text-focus-400" : "text-gray-500"
+              pathname === '/tasks' ? "text-focus-400" : "text-gray-500"
             )}
           >
             <LayoutGrid size={24} />

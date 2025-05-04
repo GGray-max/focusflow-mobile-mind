@@ -9,6 +9,7 @@ import { TaskProvider } from "./contexts/TaskContext";
 import { TimerProvider } from "./contexts/TimerContext";
 import { ProcrastinationProvider } from "./contexts/ProcrastinationContext";
 
+import Index from "./pages/Index";
 import TasksPage from "./pages/TasksPage";
 import TimerPage from "./pages/TimerPage";
 import InsightsPage from "./pages/InsightsPage";
@@ -27,7 +28,8 @@ const App = () => (
             <Sonner />
             <BrowserRouter>
               <Routes>
-                <Route path="/" element={<TasksPage />} />
+                <Route path="/" element={<Index />} />
+                <Route path="/tasks" element={<TasksPage />} />
                 <Route path="/timer" element={<TimerPage />} />
                 <Route path="/insights" element={<InsightsPage />} />
                 <Route path="/settings" element={<SettingsPage />} />
