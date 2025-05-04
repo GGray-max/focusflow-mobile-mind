@@ -3,6 +3,8 @@ import React from 'react';
 import MobileLayout from '@/components/layout/MobileLayout';
 import TimerDisplay from '@/components/timer/TimerDisplay';
 import TimerSettings from '@/components/timer/TimerSettings';
+import VirtualTree from '@/components/timer/VirtualTree';
+import DistractionBlocker from '@/components/timer/DistractionBlocker';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { useTasks } from '@/contexts/TaskContext';
 import { Button } from '@/components/ui/button';
@@ -26,12 +28,13 @@ const TimerPage: React.FC = () => {
   return (
     <MobileLayout>
       <div className="text-center mb-6">
-        <h1 className="text-2xl font-bold">Focus Timer</h1>
-        <p className="text-gray-500 text-sm">Stay focused and productive</p>
+        <h1 className="text-2xl font-bold bg-gradient-to-r from-focus-400 to-focus-300 text-transparent bg-clip-text">Focus Timer</h1>
+        <p className="text-gray-500 text-sm">Stay focused and grow your tree</p>
       </div>
       
-      <div className="flex justify-center">
+      <div className="flex flex-col items-center">
         <TimerDisplay />
+        <VirtualTree />
       </div>
       
       <Tabs defaultValue="focus" className="mt-8">
@@ -41,6 +44,8 @@ const TimerPage: React.FC = () => {
         </TabsList>
         
         <TabsContent value="focus" className="mt-4">
+          <DistractionBlocker />
+          
           {priorityTasks.length > 0 && (
             <div className="mt-6">
               <h3 className="text-sm font-medium text-gray-500 mb-3">Focus suggestions:</h3>

@@ -14,7 +14,8 @@ const TimerDisplay: React.FC = () => {
       mode,
       focusDuration,
       breakDuration,
-      currentTask
+      currentTask,
+      streakDays
     },
     startTimer,
     pauseTimer,
@@ -38,8 +39,14 @@ const TimerDisplay: React.FC = () => {
 
   return (
     <div className="flex flex-col items-center">
+      {streakDays > 0 && (
+        <div className="mb-2 px-3 py-1 bg-amber-100 text-amber-800 rounded-full text-xs font-semibold">
+          🔥 {streakDays} day streak
+        </div>
+      )}
+      
       <div className={cn(
-        "w-64 h-64 rounded-full border-8 flex items-center justify-center transition-colors",
+        "w-64 h-64 rounded-full border-8 flex items-center justify-center transition-colors relative",
         mode === 'focus' ? 'border-focus-300' : 'border-green-300',
         isRunning && (mode === 'focus' ? 'bg-focus-100' : 'bg-green-100')
       )}>
