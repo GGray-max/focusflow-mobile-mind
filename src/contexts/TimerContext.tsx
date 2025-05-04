@@ -1,6 +1,5 @@
-
-import React, { createContext, useContext, useEffect, useReducer, ReactNode } from 'react';
-import { toast } from '@/components/ui/use-toast';
+import React, { createContext, useContext, useReducer, useEffect, ReactNode } from 'react';
+import SoundService from '@/services/SoundService';
 
 type TimerMode = 'focus' | 'break' | 'idle';
 
@@ -86,7 +85,7 @@ const timerReducer = (state: TimerState, action: TimerAction): TimerState => {
             task: state.currentTask,
             completed: false
           };
-          
+
           return {
             ...state,
             isRunning: false,
@@ -111,13 +110,15 @@ const timerReducer = (state: TimerState, action: TimerAction): TimerState => {
         sessionStartTime: null
       };
     case 'TICK':
-      if (state.timeLeft <= 1) {
-        // Timer finished
+      if (state.timeLeft <= 1 && state.isRunning) {
+        // Timer finished - play sound
+        SoundService.play('timerComplete');
+
         if (state.mode === 'focus') {
           // Complete focus session
           const today = new Date().toISOString().split('T')[0];
           const isNewStreak = state.lastActiveDay !== today;
-          
+
           // Log the completed focus session
           const newSession: FocusSession = {
             id: `session-${Date.now()}`,
@@ -126,7 +127,7 @@ const timerReducer = (state: TimerState, action: TimerAction): TimerState => {
             task: state.currentTask,
             completed: true
           };
-          
+
           return {
             ...state,
             isRunning: false,
@@ -148,6 +149,9 @@ const timerReducer = (state: TimerState, action: TimerAction): TimerState => {
             sessionStartTime: null
           };
         }
+      } else if (state.timeLeft <= 5 && state.isRunning) {
+        // Add tick sound for the last 5 seconds
+        SoundService.play('timerTick');
       }
       return {
         ...state,
@@ -201,7 +205,7 @@ const timerReducer = (state: TimerState, action: TimerAction): TimerState => {
     case 'UPDATE_STREAK':
       const today = new Date().toISOString().split('T')[0];
       const isNewDay = state.lastActiveDay !== today;
-      
+
       return {
         ...state,
         lastActiveDay: today,
@@ -215,7 +219,7 @@ const timerReducer = (state: TimerState, action: TimerAction): TimerState => {
         task: action.payload.task,
         completed: action.payload.completed
       };
-      
+
       return {
         ...state,
         focusSessions: [...state.focusSessions, newFocusSession],
@@ -323,7 +327,7 @@ export const TimerProvider: React.FC<{ children: ReactNode }> = ({ children }) =
           if (timeAway > 10) {
             const reduction = Math.min(Math.floor(timeAway / 10) * 5, state.treeHealth);
             updateTreeHealth(state.treeHealth - reduction);
-            
+
             if (state.treeHealth - reduction <= 0) {
               toast({
                 title: 'Your tree has died!',
@@ -343,7 +347,7 @@ export const TimerProvider: React.FC<{ children: ReactNode }> = ({ children }) =
     };
 
     document.addEventListener('visibilitychange', handleVisibilityChange);
-    
+
     return () => {
       document.removeEventListener('visibilitychange', handleVisibilityChange);
     };
@@ -380,11 +384,11 @@ export const TimerProvider: React.FC<{ children: ReactNode }> = ({ children }) =
   const setBreakDuration = (minutes: number) => {
     dispatch({ type: 'SET_BREAK_DURATION', payload: minutes });
   };
-  
+
   const updateTreeHealth = (health: number) => {
     dispatch({ type: 'UPDATE_TREE_HEALTH', payload: health });
   };
-  
+
   const resetTreeHealth = () => {
     dispatch({ type: 'RESET_TREE_HEALTH' });
   };

@@ -5,13 +5,15 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
-import { CalendarIcon } from 'lucide-react';
+import { CalendarIcon, Clock, BellRing } from 'lucide-react';
 import { Calendar } from '@/components/ui/calendar';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { format } from 'date-fns';
 import { cn } from '@/lib/utils';
 import { useTasks, Task } from '@/contexts/TaskContext';
 import { Textarea } from '@/components/ui/textarea';
+import { Switch } from '@/components/ui/switch';
+import NotificationService from '@/services/NotificationService';
 
 interface AddTaskDialogProps {
   isOpen: boolean;
@@ -22,22 +24,37 @@ const AddTaskDialog: React.FC<AddTaskDialogProps> = ({ isOpen, onClose }) => {
   const [title, setTitle] = useState('');
   const [description, setDescription] = useState('');
   const [dueDate, setDueDate] = useState<Date | undefined>(undefined);
+  const [dueTime, setDueTime] = useState('');
   const [priority, setPriority] = useState<'low' | 'medium' | 'high'>('medium');
   const [subtasks, setSubtasks] = useState<string[]>([]);
   const [newSubtask, setNewSubtask] = useState('');
+  const [enableNotification, setEnableNotification] = useState(false);
 
   const { addTask } = useTasks();
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     
     if (!title.trim()) return;
+    
+    const hasValidNotification = enableNotification && dueDate && dueTime;
+    let notifyAt: string | undefined = undefined;
+    
+    if (hasValidNotification) {
+      const notificationDate = new Date(dueDate!);
+      const [hours, minutes] = dueTime.split(':').map(Number);
+      notificationDate.setHours(hours, minutes);
+      notifyAt = notificationDate.toISOString();
+    }
     
     const newTask: Omit<Task, 'id' | 'createdAt'> = {
       title: title.trim(),
       description: description.trim(),
       completed: false,
       dueDate: dueDate ? dueDate.toISOString() : undefined,
+      dueTime: dueTime || undefined,
+      notifyAt,
+      hasNotification: !!hasValidNotification,
       priority,
       tags: [],
       subtasks: subtasks.map((text, index) => ({
@@ -49,6 +66,18 @@ const AddTaskDialog: React.FC<AddTaskDialogProps> = ({ isOpen, onClose }) => {
     };
     
     addTask(newTask);
+
+    // Schedule notification if enabled
+    if (hasValidNotification && notifyAt) {
+      const notificationTime = new Date(notifyAt);
+      await NotificationService.scheduleTaskNotification(
+        Date.now().toString(),
+        `Task Due: ${title}`,
+        description || 'Time to complete your task!',
+        notificationTime
+      );
+    }
+    
     handleClose();
   };
 
@@ -104,30 +133,60 @@ const AddTaskDialog: React.FC<AddTaskDialogProps> = ({ isOpen, onClose }) => {
             />
           </div>
           
-          <div className="space-y-2">
-            <Label>Due Date (Optional)</Label>
-            <Popover>
-              <PopoverTrigger asChild>
-                <Button
-                  variant="outline"
-                  className={cn(
-                    "w-full justify-start text-left font-normal",
-                    !dueDate && "text-muted-foreground"
-                  )}
-                >
-                  <CalendarIcon className="mr-2 h-4 w-4" />
-                  {dueDate ? format(dueDate, "PPP") : "Select a date"}
-                </Button>
-              </PopoverTrigger>
-              <PopoverContent className="w-auto p-0">
-                <Calendar
-                  mode="single"
-                  selected={dueDate}
-                  onSelect={setDueDate}
-                  initialFocus
+          <div className="space-y-4">
+            <div className="space-y-2">
+              <Label>Due Date (Optional)</Label>
+              <Popover>
+                <PopoverTrigger asChild>
+                  <Button
+                    variant="outline"
+                    className={cn(
+                      "w-full justify-start text-left font-normal",
+                      !dueDate && "text-muted-foreground"
+                    )}
+                  >
+                    <CalendarIcon className="mr-2 h-4 w-4" />
+                    {dueDate ? format(dueDate, "PPP") : "Select a date"}
+                  </Button>
+                </PopoverTrigger>
+                <PopoverContent className="w-auto p-0">
+                  <Calendar
+                    mode="single"
+                    selected={dueDate}
+                    onSelect={setDueDate}
+                    initialFocus
+                  />
+                </PopoverContent>
+              </Popover>
+            </div>
+            
+            <div className="space-y-2">
+              <Label htmlFor="dueTime">Due Time (Optional)</Label>
+              <div className="flex items-center space-x-2">
+                <Input
+                  id="dueTime"
+                  type="time"
+                  value={dueTime}
+                  onChange={(e) => setDueTime(e.target.value)}
+                  className="flex-1"
                 />
-              </PopoverContent>
-            </Popover>
+                <Clock className="h-4 w-4 text-gray-400" />
+              </div>
+            </div>
+            
+            <div className="flex items-center space-x-2 pt-2">
+              <Switch
+                id="enableNotification"
+                checked={enableNotification}
+                onCheckedChange={setEnableNotification}
+              />
+              <Label htmlFor="enableNotification" className="cursor-pointer">
+                <div className="flex items-center">
+                  <BellRing className="h-4 w-4 mr-2 text-focus-400" />
+                  Notify me at this time
+                </div>
+              </Label>
+            </div>
           </div>
           
           <div className="space-y-2">

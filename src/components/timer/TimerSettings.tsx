@@ -99,12 +99,29 @@ const TimerSettings: React.FC = () => {
             />
             <Button variant="outline" disabled>Add</Button>
           </div>
-          <div className="pt-2">
+          <div className="pt-2 mb-4">
             <p className="text-xs text-gray-500 italic">
               Note: The blocking is simulated in this offline mobile app. 
               For actual website/app blocking, you'll need a dedicated 
               system-level blocking app.
             </p>
+          </div>
+          
+          <div className="space-y-2 border-t pt-4 mt-4">
+            <Label className="text-sm">Sound Settings</Label>
+            <div className="flex items-center justify-between">
+              <span className="text-sm">Timer completion sound</span>
+              <Switch defaultChecked id="sound-enabled" />
+            </div>
+            <div className="flex items-center justify-between">
+              <span className="text-sm">Tick sound in last 5 seconds</span>
+              <Switch defaultChecked id="tick-sound-enabled" />
+            </div>
+            <div className="pt-2">
+              <p className="text-xs text-gray-500">
+                Sounds will play when your timer completes or when approaching the end
+              </p>
+            </div>
           </div>
         </div>
       </Card>

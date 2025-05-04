@@ -9,6 +9,9 @@ export interface Task {
   createdAt: string;
   completedAt?: string; // New: track when tasks are completed
   dueDate?: string;
+  dueTime?: string; // Time for notifications
+  notifyAt?: string; // Exact date and time for notification
+  hasNotification: boolean;
   priority: 'low' | 'medium' | 'high';
   tags: string[];
   subtasks: SubTask[];
@@ -192,6 +195,7 @@ export const TaskProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
       ...task,
       id: Date.now().toString(),
       createdAt: new Date().toISOString(),
+      hasNotification: task.hasNotification || false,
     };
     dispatch({ type: 'ADD_TASK', payload: newTask });
   };
