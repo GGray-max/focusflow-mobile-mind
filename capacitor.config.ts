@@ -11,7 +11,7 @@ const config: CapacitorConfig = {
   // Capacitor plugin configuration
   plugins: {
     LocalNotifications: {
-      smallIcon: "ic_stat_notification",
+      smallIcon: "ic_stat_focus_brain",
       iconColor: "#8B5CF6",
       sound: "beep.wav",
       // Enable exact notifications
@@ -39,7 +39,9 @@ const config: CapacitorConfig = {
       keystoreAlias: null,
       keystoreAliasPassword: null,
       releaseType: "APK"
-    }
+    },
+    iconBackground: "#8B5CF6", // Purple background for adaptive icons
+    backgroundColor: "#8B5CF6" // App background color
   }
 };
 

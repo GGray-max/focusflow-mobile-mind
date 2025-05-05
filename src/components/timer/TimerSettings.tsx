@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { Slider } from '@/components/ui/slider';
 import { Label } from '@/components/ui/label';
@@ -6,7 +7,7 @@ import { Card } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { Switch } from '@/components/ui/switch';
-import { Clock } from 'lucide-react';
+import { Clock, Volume2, VolumeX, Moon, Sun } from 'lucide-react';
 import SoundService from '@/services/SoundService';
 import { toast } from '@/components/ui/use-toast';
 
@@ -18,6 +19,10 @@ const TimerSettings: React.FC = () => {
     toggleSound,
     toggleTickSound
   } = useTimer();
+  
+  const [isDarkMode, setIsDarkMode] = useState(() => {
+    return document.documentElement.classList.contains('dark');
+  });
   
   // Format total time
   const formatTotalTime = (seconds: number) => {
@@ -61,14 +66,45 @@ const TimerSettings: React.FC = () => {
     }
   };
 
+  const toggleDarkMode = () => {
+    const newDarkMode = !isDarkMode;
+    setIsDarkMode(newDarkMode);
+    
+    if (newDarkMode) {
+      document.documentElement.classList.add('dark');
+      localStorage.setItem('darkMode', 'true');
+    } else {
+      document.documentElement.classList.remove('dark');
+      localStorage.setItem('darkMode', 'false');
+    }
+    
+    toast({
+      title: newDarkMode ? "Dark mode enabled" : "Light mode disabled",
+      description: "Your theme preference has been saved",
+    });
+  };
   
   return (
     <div className="space-y-6 mt-4">
-      <Card className="p-4 border-focus-200 dark:border-focus-700">
-        <h3 className="font-medium flex items-center gap-2 mb-4">
-          <Clock size={18} className="text-focus-400" />
-          Timer Settings
-        </h3>
+      <Card className="p-4 border-focus-200 dark:border-focus-700 dark:bg-gray-800/90 dark:shadow-lg transition-all">
+        <div className="flex justify-between items-center mb-4">
+          <h3 className="font-medium flex items-center gap-2">
+            <Clock size={18} className="text-focus-400" />
+            Timer Settings
+          </h3>
+          <Button 
+            onClick={toggleDarkMode}
+            variant="ghost" 
+            size="icon" 
+            className="rounded-full h-8 w-8 bg-gray-100 dark:bg-gray-700 transition-colors"
+          >
+            {isDarkMode ? (
+              <Sun size={16} className="text-amber-400" />
+            ) : (
+              <Moon size={16} className="text-focus-400" />
+            )}
+          </Button>
+        </div>
       
         <div className="space-y-6">
           <div className="space-y-2">
@@ -99,25 +135,25 @@ const TimerSettings: React.FC = () => {
             />
           </div>
           
-          <div className="pt-2 border-t border-gray-100 dark:border-gray-800">
-            <h4 className="text-sm text-gray-500 mb-3">Quick Stats</h4>
+          <div className="pt-2 border-t border-gray-100 dark:border-gray-700 transition-colors">
+            <h4 className="text-sm text-gray-500 dark:text-gray-400 mb-3">Quick Stats</h4>
             <div className="grid grid-cols-2 gap-3 text-sm">
-              <div>
-                <p className="text-gray-500">Total Focus Time</p>
-                <p className="font-semibold">{formatTotalTime(totalFocusTime || 0)}</p>
+              <div className="p-3 rounded-lg bg-gray-50 dark:bg-gray-700/50 transition-colors">
+                <p className="text-gray-500 dark:text-gray-400">Total Focus Time</p>
+                <p className="font-semibold text-lg text-focus-500 dark:text-focus-300">{formatTotalTime(totalFocusTime || 0)}</p>
               </div>
-              <div>
-                <p className="text-gray-500">Sessions Completed</p>
-                <p className="font-semibold">{completedSessions}/{totalSessions}</p>
+              <div className="p-3 rounded-lg bg-gray-50 dark:bg-gray-700/50 transition-colors">
+                <p className="text-gray-500 dark:text-gray-400">Sessions Completed</p>
+                <p className="font-semibold text-lg text-focus-500 dark:text-focus-300">{completedSessions}/{totalSessions}</p>
               </div>
             </div>
           </div>
         </div>
       </Card>
       
-      <Card className="p-4 border-focus-200 dark:border-focus-700">
+      <Card className="p-4 border-focus-200 dark:border-focus-700 dark:bg-gray-800/90 dark:shadow-lg transition-all">
         <h3 className="font-medium mb-3">Distraction Blocking</h3>
-        <p className="text-sm text-gray-500 mb-4">
+        <p className="text-sm text-gray-500 dark:text-gray-400 mb-4">
           The app will help you stay focused by simulating the blocking of 
           distracting websites and apps during focus sessions.
         </p>
@@ -127,31 +163,43 @@ const TimerSettings: React.FC = () => {
           <div className="flex gap-2">
             <Input 
               placeholder="Add app name"
-              className="flex-1"
+              className="flex-1 dark:bg-gray-700 dark:border-gray-600"
               disabled // Simulated functionality
             />
             <Button variant="outline" disabled>Add</Button>
           </div>
           <div className="pt-2 mb-4">
-            <p className="text-xs text-gray-500 italic">
+            <p className="text-xs text-gray-500 dark:text-gray-400 italic">
               Note: The blocking is simulated in this offline mobile app. 
               For actual website/app blocking, you'll need a dedicated 
               system-level blocking app.
             </p>
           </div>
           
-          <div className="space-y-2 border-t pt-4 mt-4 dark:border-gray-800">
+          <div className="space-y-2 border-t pt-4 mt-4 dark:border-gray-700 transition-colors">
             <Label className="text-sm">Sound Settings</Label>
-            <div className="flex items-center justify-between">
-              <span className="text-sm">Timer completion sound</span>
+            <div className="flex items-center justify-between p-2 rounded-md hover:bg-gray-50 dark:hover:bg-gray-700/60 transition-colors">
+              <span className="text-sm flex items-center gap-2">
+                {soundEnabled ? 
+                  <Volume2 size={16} className="text-focus-400" /> : 
+                  <VolumeX size={16} className="text-gray-400" />
+                }
+                Timer completion sound
+              </span>
               <Switch 
                 checked={soundEnabled !== undefined ? soundEnabled : true} 
                 onCheckedChange={handleSoundToggle}
                 id="sound-enabled" 
               />
             </div>
-            <div className="flex items-center justify-between">
-              <span className="text-sm">Tick sound in last 5 seconds</span>
+            <div className="flex items-center justify-between p-2 rounded-md hover:bg-gray-50 dark:hover:bg-gray-700/60 transition-colors">
+              <span className="text-sm flex items-center gap-2">
+                {tickEnabled ? 
+                  <Volume2 size={16} className="text-focus-400" /> : 
+                  <VolumeX size={16} className="text-gray-400" />
+                }
+                Tick sound in last 5 seconds
+              </span>
               <Switch 
                 checked={tickEnabled !== undefined ? tickEnabled : true} 
                 onCheckedChange={handleTickToggle}
@@ -159,7 +207,7 @@ const TimerSettings: React.FC = () => {
               />
             </div>
             <div className="pt-2">
-              <p className="text-xs text-gray-500">
+              <p className="text-xs text-gray-500 dark:text-gray-400">
                 Sounds will play when your timer completes or when approaching the end
               </p>
             </div>

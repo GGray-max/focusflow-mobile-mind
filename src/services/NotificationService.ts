@@ -131,7 +131,7 @@ class NotificationService {
               allowWhileIdle: true // Ensure delivery even in doze mode
             },
             sound: customSound,
-            smallIcon: 'ic_stat_notification',
+            smallIcon: 'ic_stat_focus_brain',
             iconColor: '#8B5CF6',
             channelId: 'task-notifications',
             autoCancel: true,
@@ -177,7 +177,7 @@ class NotificationService {
               allowWhileIdle: true
             },
             sound: customSound,
-            smallIcon: 'ic_stat_notification',
+            smallIcon: 'ic_stat_focus_brain',
             iconColor: '#8B5CF6',
             channelId: 'timer-notifications',
             autoCancel: true,

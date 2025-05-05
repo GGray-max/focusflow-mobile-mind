@@ -1,4 +1,3 @@
-
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
@@ -65,5 +64,19 @@
     --sidebar-accent-foreground: 210 40% 98%;
     --sidebar-border: 217.2 32.6% 17.5%;
     --sidebar-ring: 265 89% 66%;
+  }
+}
+
+@layer utilities {
+  .glass-card {
+    @apply backdrop-blur-sm bg-white/90 dark:bg-black/40 border border-gray-200 dark:border-gray-700 shadow-sm;
+  }
+  
+  .focus-gradient {
+    @apply bg-gradient-to-br from-focus-300 to-focus-500 text-white;
+  }
+  
+  .dark-gradient {
+    @apply bg-gradient-to-br from-gray-800 to-gray-900 text-white;
   }
 }
