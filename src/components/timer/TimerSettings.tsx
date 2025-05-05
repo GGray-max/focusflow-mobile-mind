@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { Slider } from '@/components/ui/slider';
 import { Label } from '@/components/ui/label';
@@ -62,6 +61,7 @@ const TimerSettings: React.FC = () => {
     }
   };
 
+  
   return (
     <div className="space-y-6 mt-4">
       <Card className="p-4 border-focus-200 dark:border-focus-700">

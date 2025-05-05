@@ -1,6 +1,6 @@
 import React, { createContext, useContext, useReducer, useEffect, ReactNode } from 'react';
 import SoundService from '@/services/SoundService';
-import { toast } from '@/hooks/use-toast';
+import { toast } from '@/components/ui/use-toast';
 
 type TimerMode = 'focus' | 'break' | 'idle';
 
@@ -27,6 +27,8 @@ interface TimerState {
   focusSessions: FocusSession[]; // Track focus sessions
   totalFocusTime: number; // Total seconds spent focusing
   sessionStartTime: number | null; // Timestamp when session started
+  soundEnabled: boolean; // Whether timer completion sound is enabled
+  tickEnabled: boolean; // Whether tick sound in last 5 seconds is enabled
 }
 
 type TimerAction =
@@ -43,6 +45,8 @@ type TimerAction =
   | { type: 'RESET_TREE_HEALTH' }
   | { type: 'UPDATE_STREAK' }
   | { type: 'LOG_FOCUS_SESSION'; payload: { duration: number; task: string | null; completed: boolean } }
+  | { type: 'TOGGLE_SOUND'; payload: boolean }
+  | { type: 'TOGGLE_TICK_SOUND'; payload: boolean }
   | { type: 'LOAD_STATE'; payload: TimerState };
 
 const DEFAULT_FOCUS_DURATION = 25; // 25 minutes
@@ -62,6 +66,8 @@ const initialState: TimerState = {
   focusSessions: [],
   totalFocusTime: 0,
   sessionStartTime: null,
+  soundEnabled: true, // Default to true
+  tickEnabled: true, // Default to true
 };
 
 const timerReducer = (state: TimerState, action: TimerAction): TimerState => {
@@ -113,7 +119,9 @@ const timerReducer = (state: TimerState, action: TimerAction): TimerState => {
     case 'TICK':
       if (state.timeLeft <= 1 && state.isRunning) {
         // Timer finished - play sound
-        SoundService.play('timerComplete');
+        if (state.soundEnabled) {
+          SoundService.play('timerComplete');
+        }
 
         if (state.mode === 'focus') {
           // Complete focus session
@@ -152,7 +160,9 @@ const timerReducer = (state: TimerState, action: TimerAction): TimerState => {
         }
       } else if (state.timeLeft <= 5 && state.isRunning) {
         // Add tick sound for the last 5 seconds
-        SoundService.play('timerTick');
+        if (state.tickEnabled) {
+          SoundService.play('timerTick');
+        }
       }
       return {
         ...state,
@@ -226,6 +236,16 @@ const timerReducer = (state: TimerState, action: TimerAction): TimerState => {
         focusSessions: [...state.focusSessions, newFocusSession],
         totalFocusTime: state.totalFocusTime + action.payload.duration,
       };
+    case 'TOGGLE_SOUND':
+      return {
+        ...state,
+        soundEnabled: action.payload
+      };
+    case 'TOGGLE_TICK_SOUND':
+      return {
+        ...state,
+        tickEnabled: action.payload
+      };
     case 'LOAD_STATE':
       return action.payload;
     default:
@@ -244,6 +264,8 @@ interface TimerContextType {
   setBreakDuration: (minutes: number) => void;
   updateTreeHealth: (health: number) => void;
   resetTreeHealth: () => void;
+  toggleSound: (enabled: boolean) => void;
+  toggleTickSound: (enabled: boolean) => void;
 }
 
 const TimerContext = createContext<TimerContextType | undefined>(undefined);
@@ -281,7 +303,7 @@ export const TimerProvider: React.FC<{ children: ReactNode }> = ({ children }) =
     }
   }, [state]);
 
-  // Timer tick logic
+  // Timer tick logic with sound enhancements
   useEffect(() => {
     let interval: number | null = null;
 
@@ -394,6 +416,15 @@ export const TimerProvider: React.FC<{ children: ReactNode }> = ({ children }) =
     dispatch({ type: 'RESET_TREE_HEALTH' });
   };
 
+  // Add new methods for sound toggling
+  const toggleSound = (enabled: boolean) => {
+    dispatch({ type: 'TOGGLE_SOUND', payload: enabled });
+  };
+
+  const toggleTickSound = (enabled: boolean) => {
+    dispatch({ type: 'TOGGLE_TICK_SOUND', payload: enabled });
+  };
+
   return (
     <TimerContext.Provider
       value={{
@@ -406,7 +437,9 @@ export const TimerProvider: React.FC<{ children: ReactNode }> = ({ children }) =
         setFocusDuration,
         setBreakDuration,
         updateTreeHealth,
-        resetTreeHealth
+        resetTreeHealth,
+        toggleSound,
+        toggleTickSound
       }}
     >
       {children}
