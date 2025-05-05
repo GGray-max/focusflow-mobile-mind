@@ -27,8 +27,9 @@ const TimerSettings: React.FC = () => {
     return `${minutes}m`;
   };
   
-  const totalSessions = focusSessions.length;
-  const completedSessions = focusSessions.filter(session => session.completed).length;
+  // Make sure focusSessions is defined before accessing it
+  const totalSessions = focusSessions?.length || 0;
+  const completedSessions = focusSessions?.filter(session => session.completed)?.length || 0;
 
   return (
     <div className="space-y-6 mt-4">
@@ -72,7 +73,7 @@ const TimerSettings: React.FC = () => {
             <div className="grid grid-cols-2 gap-3 text-sm">
               <div>
                 <p className="text-gray-500">Total Focus Time</p>
-                <p className="font-semibold">{formatTotalTime(totalFocusTime)}</p>
+                <p className="font-semibold">{formatTotalTime(totalFocusTime || 0)}</p>
               </div>
               <div>
                 <p className="text-gray-500">Sessions Completed</p>
