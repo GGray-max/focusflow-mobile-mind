@@ -1,4 +1,3 @@
-
 import React, { createContext, useContext, useEffect, useReducer, ReactNode } from 'react';
 
 export interface Task {
@@ -198,6 +197,26 @@ export const TaskProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
       hasNotification: task.hasNotification || false,
     };
     dispatch({ type: 'ADD_TASK', payload: newTask });
+
+    // Schedule notification if due date exists
+    if (newTask.dueDate) {
+      try {
+        const dueDate = new Date(newTask.dueDate);
+        // Try to get custom notification sound from localStorage
+        const customSound = localStorage.getItem('customTaskSound') ? 
+          'custom-task-sound.mp3' : 'beep.wav';
+
+        await NotificationService.scheduleTaskNotification(
+          newTask.id,
+          'Task Due',
+          `Task "${newTask.title}" is due now!`,
+          dueDate,
+          customSound
+        );
+      } catch (error) {
+        console.error('Failed to schedule task notification:', error);
+      }
+    }
   };
 
   const updateTask = (task: Task) => {
@@ -264,4 +283,14 @@ export const useTasks = (): TaskContextType => {
     throw new Error('useTasks must be used within a TaskProvider');
   }
   return context;
+};
+
+// Placeholder functions -  These need to be fully implemented based on your notification system
+const NotificationService = {
+  scheduleTaskNotification: async (id: string, title: string, body: string, dueDate: Date, sound: string = 'default') => {
+    //Implementation for scheduling task notifications, including handling background notifications and custom sounds.
+    console.log(`Scheduling notification for task ${id}: ${title} - ${body} at ${dueDate} with sound ${sound}`);
+    // ... actual notification scheduling logic here ...
+  },
+  // Add other notification-related functions here as needed...
 };

@@ -4,7 +4,8 @@ import MobileLayout from '@/components/layout/MobileLayout';
 import { Button } from '@/components/ui/button';
 import { Label } from '@/components/ui/label';
 import { Switch } from '@/components/ui/switch';
-import { Trash2, Download, Share2 } from 'lucide-react';
+import { Trash2, Download, Share2, Music } from 'lucide-react';
+import SoundService from '@/services/SoundService';
 import { Dialog, DialogTrigger, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from '@/components/ui/dialog';
 import { useTimer } from '@/contexts/TimerContext';
 import { useTasks } from '@/contexts/TaskContext';
@@ -89,6 +90,92 @@ const SettingsPage: React.FC = () => {
                 disabled={!allowNotifications} 
                 defaultChecked 
               />
+            </div>
+            
+            <div className="pt-2 border-t border-gray-100 dark:border-gray-700 mt-2">
+              <h3 className="text-sm font-medium mb-2">Notification Sounds</h3>
+              
+              <div className="space-y-3">
+                <div className="flex flex-col gap-2">
+                  <Label htmlFor="timerSound" className="text-sm">
+                    Timer completion sound
+                  </Label>
+                  <Button 
+                    variant="outline" 
+                    size="sm"
+                    id="timerSound"
+                    onClick={async () => {
+                      try {
+                        const soundFile = await SoundService.getFileFromDevice();
+                        if (soundFile) {
+                          const success = await SoundService.setCustomSound('timer', soundFile);
+                          if (success) {
+                            toast({
+                              title: "Timer sound updated",
+                              description: "Your custom timer sound has been set"
+                            });
+                            // Play a preview
+                            SoundService.play('timerComplete');
+                          }
+                        }
+                      } catch (error) {
+                        console.error('Error setting custom timer sound:', error);
+                        toast({
+                          title: "Error",
+                          description: "Failed to set custom timer sound",
+                          variant: "destructive"
+                        });
+                      }
+                    }}
+                    className="flex justify-between items-center"
+                  >
+                    <span>Choose custom sound</span>
+                    <Music className="h-4 w-4 ml-2" />
+                  </Button>
+                </div>
+                
+                <div className="flex flex-col gap-2">
+                  <Label htmlFor="taskSound" className="text-sm">
+                    Task notification sound
+                  </Label>
+                  <Button 
+                    variant="outline" 
+                    size="sm"
+                    id="taskSound"
+                    onClick={async () => {
+                      try {
+                        const soundFile = await SoundService.getFileFromDevice();
+                        if (soundFile) {
+                          const success = await SoundService.setCustomSound('task', soundFile);
+                          if (success) {
+                            toast({
+                              title: "Task sound updated",
+                              description: "Your custom task notification sound has been set"
+                            });
+                            // Play a preview
+                            SoundService.play('taskNotification');
+                          }
+                        }
+                      } catch (error) {
+                        console.error('Error setting custom task sound:', error);
+                        toast({
+                          title: "Error",
+                          description: "Failed to set custom task sound",
+                          variant: "destructive"
+                        });
+                      }
+                    }}
+                    className="flex justify-between items-center"
+                  >
+                    <span>Choose custom sound</span>
+                    <Music className="h-4 w-4 ml-2" />
+                  </Button>
+                </div>
+                
+                <p className="text-xs text-gray-500 mt-1">
+                  Select audio files from your device to use as custom notification sounds
+                </p>
+              </div>
             </div>
           </div>
         </div>

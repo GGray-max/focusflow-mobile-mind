@@ -7,7 +7,7 @@ class NotificationService {
     return permissionState.display === 'granted';
   }
 
-  async scheduleTaskNotification(taskId: string, title: string, body: string, scheduledTime: Date) {
+  async scheduleTaskNotification(taskId: string, title: string, body: string, scheduledTime: Date, sound = 'beep.wav') {
     const hasPermission = await this.requestPermissions();
     
     if (!hasPermission) {
@@ -22,10 +22,15 @@ class NotificationService {
           title: title,
           body: body,
           schedule: { at: scheduledTime },
-          sound: 'beep.wav',
+          sound: sound,
           smallIcon: 'ic_stat_notification',
           iconColor: '#8B5CF6',
-          autoCancel: true
+          autoCancel: true,
+          ongoing: false,
+          // Ensure notification shows outside app
+          channelId: 'task-notifications',
+          channelName: 'Task Notifications',
+          importance: 5 // High importance
         }
       ]
     });
