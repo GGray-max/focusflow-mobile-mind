@@ -24,6 +24,7 @@ const queryClient = new QueryClient();
 
 const App = () => {
   useEffect(() => {
+    // Initialize notifications
     const initializeNotifications = async () => {
       try {
         if (Capacitor.isNativePlatform()) {
@@ -31,14 +32,43 @@ const App = () => {
           const hasPermission = await NotificationService.requestPermissions();
           console.log('Notification permissions:', hasPermission ? 'granted' : 'denied');
         } else {
-          console.info('Not a native platform - notification features will be limited');
+          console.info('Not a native platform - notifications will use web notifications');
         }
       } catch (error) {
         console.error('Error initializing notifications:', error);
       }
     };
 
+    // Set up dark mode from preferences
+    const setupDarkMode = () => {
+      const isDarkMode = localStorage.getItem('darkMode') === 'true' || 
+                        (!('darkMode' in localStorage) && 
+                         window.matchMedia('(prefers-color-scheme: dark)').matches);
+      
+      if (isDarkMode) {
+        document.documentElement.classList.add('dark');
+      } else {
+        document.documentElement.classList.remove('dark');
+      }
+    };
+
+    setupDarkMode();
     initializeNotifications();
+    
+    // Watch for system theme changes if no preference is saved
+    if (!('darkMode' in localStorage)) {
+      const darkModeMediaQuery = window.matchMedia('(prefers-color-scheme: dark)');
+      const handleChange = (e: MediaQueryListEvent) => {
+        if (e.matches) {
+          document.documentElement.classList.add('dark');
+        } else {
+          document.documentElement.classList.remove('dark');
+        }
+      };
+      
+      darkModeMediaQuery.addEventListener('change', handleChange);
+      return () => darkModeMediaQuery.removeEventListener('change', handleChange);
+    }
   }, []);
 
   return (

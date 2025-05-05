@@ -1,10 +1,12 @@
 
 import { Howl } from 'howler';
 import { Capacitor } from '@capacitor/core';
+import { toast } from '@/components/ui/use-toast';
 
 class SoundService {
   private sounds: Record<string, Howl> = {};
   private customSounds: Record<string, Howl> = {};
+  private customSoundNames: Record<string, string> = {};
 
   constructor() {
     this.sounds = {
@@ -28,6 +30,8 @@ class SoundService {
     try {
       const customTimerSound = localStorage.getItem('customTimerSound');
       const customTaskSound = localStorage.getItem('customTaskSound');
+      const customTimerSoundName = localStorage.getItem('customTimerSoundName');
+      const customTaskSoundName = localStorage.getItem('customTaskSoundName');
       
       if (customTimerSound) {
         this.customSounds.timerComplete = new Howl({
@@ -35,6 +39,8 @@ class SoundService {
           volume: 0.7,
           preload: true
         });
+        
+        this.customSoundNames.timerComplete = customTimerSoundName || 'Custom Timer Sound';
       }
       
       if (customTaskSound) {
@@ -43,7 +49,11 @@ class SoundService {
           volume: 0.7,
           preload: true
         });
+        
+        this.customSoundNames.taskNotification = customTaskSoundName || 'Custom Task Sound';
       }
+      
+      console.log('Custom sounds loaded:', this.customSoundNames);
     } catch (error) {
       console.error('Error loading custom sounds:', error);
     }
@@ -52,15 +62,20 @@ class SoundService {
   play(soundName: 'timerComplete' | 'timerTick' | 'taskNotification') {
     // Check for custom sound first
     if (this.customSounds[soundName]) {
+      console.log(`Playing custom sound: ${this.customSoundNames[soundName]}`);
       this.customSounds[soundName].play();
-      return;
+      return true;
     }
     
     // Fall back to default sound
     const sound = this.sounds[soundName] || this.sounds.timerComplete;
     if (sound) {
+      console.log(`Playing default sound: ${soundName}`);
       sound.play();
+      return true;
     }
+    
+    return false;
   }
 
   stop(soundName: 'timerComplete' | 'timerTick' | 'taskNotification') {
@@ -76,12 +91,18 @@ class SoundService {
     }
   }
   
+  getCustomSoundName(type: 'timer' | 'task'): string | null {
+    const soundKey = type === 'timer' ? 'timerComplete' : 'taskNotification';
+    return this.customSoundNames[soundKey] || null;
+  }
+  
   // Method to set custom sounds from device storage
-  async setCustomSound(type: 'timer' | 'task', fileUrl: string) {
+  async setCustomSound(type: 'timer' | 'task', fileUrl: string, fileName: string) {
     try {
       if (type === 'timer') {
         // Store the sound in localStorage
         localStorage.setItem('customTimerSound', fileUrl);
+        localStorage.setItem('customTimerSoundName', fileName);
         
         // Create a Howl for in-app playback
         this.customSounds.timerComplete = new Howl({
@@ -89,6 +110,8 @@ class SoundService {
           volume: 0.7,
           preload: true
         });
+        
+        this.customSoundNames.timerComplete = fileName;
         
         // For native notifications, we need to save the file locally
         if (Capacitor.isNativePlatform()) {
@@ -107,6 +130,7 @@ class SoundService {
       } else {
         // Store the task notification sound
         localStorage.setItem('customTaskSound', fileUrl);
+        localStorage.setItem('customTaskSoundName', fileName);
         
         // Create a Howl for in-app playback
         this.customSounds.taskNotification = new Howl({
@@ -114,6 +138,8 @@ class SoundService {
           volume: 0.7,
           preload: true
         });
+        
+        this.customSoundNames.taskNotification = fileName;
         
         // For native notifications
         if (Capacitor.isNativePlatform()) {
@@ -137,7 +163,7 @@ class SoundService {
   }
   
   // Method to get file from device storage
-  async getFileFromDevice(): Promise<string | null> {
+  async getFileFromDevice(): Promise<{url: string, name: string} | null> {
     return new Promise((resolve) => {
       const input = document.createElement('input');
       input.type = 'file';
@@ -151,7 +177,10 @@ class SoundService {
         }
         
         const url = URL.createObjectURL(file);
-        resolve(url);
+        resolve({
+          url,
+          name: file.name
+        });
       };
       
       input.click();

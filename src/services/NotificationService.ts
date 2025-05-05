@@ -44,32 +44,36 @@ class NotificationService {
   }
 
   private registerListeners() {
-    // Listen for notification received when app is in foreground
-    LocalNotifications.addListener('localNotificationReceived', (notification) => {
-      console.log('Notification received in foreground:', notification);
-    });
+    try {
+      // Listen for notification received when app is in foreground
+      LocalNotifications.addListener('localNotificationReceived', (notification) => {
+        console.log('Notification received in foreground:', notification);
+      });
 
-    // Listen for notification action (e.g., when user taps the notification)
-    LocalNotifications.addListener('localNotificationActionPerformed', (action: ActionPerformed) => {
-      console.log('Notification action performed:', action);
-      // You can handle navigation or other actions here
-    });
+      // Listen for notification action (e.g., when user taps the notification)
+      LocalNotifications.addListener('localNotificationActionPerformed', (action: ActionPerformed) => {
+        console.log('Notification action performed:', action);
+        // You can handle navigation or other actions here
+      });
 
-    // Listen for app resume event to check for pending notifications
-    if (Capacitor.isNativePlatform()) {
-      try {
-        // Check if we're on a platform where app state is supported (mobile)
-        if (typeof document !== 'undefined') {
-          document.addEventListener('visibilitychange', () => {
-            if (document.visibilityState === 'visible') {
-              this.checkPendingNotifications();
-            }
-          });
-          console.log('Visibility change listener registered');
+      // Listen for app resume event to check for pending notifications
+      if (Capacitor.isNativePlatform()) {
+        try {
+          // Check if we're on a platform where app state is supported (mobile)
+          if (typeof document !== 'undefined') {
+            document.addEventListener('visibilitychange', () => {
+              if (document.visibilityState === 'visible') {
+                this.checkPendingNotifications();
+              }
+            });
+            console.log('Visibility change listener registered');
+          }
+        } catch (error) {
+          console.error('Error registering visibility change listener:', error);
         }
-      } catch (error) {
-        console.error('Error registering visibility change listener:', error);
       }
+    } catch (error) {
+      console.error('Error registering notification listeners:', error);
     }
   }
 

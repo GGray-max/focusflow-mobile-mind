@@ -1,5 +1,5 @@
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -14,6 +14,7 @@ import { useTasks, Task } from '@/contexts/TaskContext';
 import { Textarea } from '@/components/ui/textarea';
 import { Switch } from '@/components/ui/switch';
 import NotificationService from '@/services/NotificationService';
+import { toast } from '@/components/ui/use-toast';
 
 interface AddTaskDialogProps {
   isOpen: boolean;
@@ -29,8 +30,19 @@ const AddTaskDialog: React.FC<AddTaskDialogProps> = ({ isOpen, onClose }) => {
   const [subtasks, setSubtasks] = useState<string[]>([]);
   const [newSubtask, setNewSubtask] = useState('');
   const [enableNotification, setEnableNotification] = useState(false);
+  const [hasNotificationPermission, setHasNotificationPermission] = useState(false);
 
   const { addTask } = useTasks();
+
+  useEffect(() => {
+    // Check notification permission on load
+    const checkPermission = async () => {
+      const hasPermission = await NotificationService.requestPermissions();
+      setHasNotificationPermission(hasPermission);
+    };
+    
+    checkPermission();
+  }, []);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -46,6 +58,8 @@ const AddTaskDialog: React.FC<AddTaskDialogProps> = ({ isOpen, onClose }) => {
       notificationDate.setHours(hours, minutes);
       notifyAt = notificationDate.toISOString();
     }
+    
+    const taskId = Date.now().toString();
     
     const newTask: Omit<Task, 'id' | 'createdAt'> = {
       title: title.trim(),
@@ -70,12 +84,35 @@ const AddTaskDialog: React.FC<AddTaskDialogProps> = ({ isOpen, onClose }) => {
     // Schedule notification if enabled
     if (hasValidNotification && notifyAt) {
       const notificationTime = new Date(notifyAt);
-      await NotificationService.scheduleTaskNotification(
-        Date.now().toString(),
-        `Task Due: ${title}`,
-        description || 'Time to complete your task!',
-        notificationTime
-      );
+      
+      if (!hasNotificationPermission) {
+        const granted = await NotificationService.requestPermissions();
+        setHasNotificationPermission(granted);
+        
+        if (!granted) {
+          toast({
+            title: "Notification permission required",
+            description: "Please enable notifications to receive task reminders",
+            variant: "destructive"
+          });
+        }
+      }
+      
+      if (hasNotificationPermission) {
+        const scheduled = await NotificationService.scheduleTaskNotification(
+          taskId,
+          `Task Due: ${title}`,
+          description || 'Time to complete your task!',
+          notificationTime
+        );
+        
+        if (scheduled) {
+          toast({
+            title: "Task reminder set",
+            description: `You will be notified at ${format(notificationTime, 'PPpp')}`,
+          });
+        }
+      }
     }
     
     handleClose();
@@ -98,9 +135,11 @@ const AddTaskDialog: React.FC<AddTaskDialogProps> = ({ isOpen, onClose }) => {
     setTitle('');
     setDescription('');
     setDueDate(undefined);
+    setDueTime('');
     setPriority('medium');
     setSubtasks([]);
     setNewSubtask('');
+    setEnableNotification(false);
     onClose();
   };
 
@@ -178,7 +217,22 @@ const AddTaskDialog: React.FC<AddTaskDialogProps> = ({ isOpen, onClose }) => {
               <Switch
                 id="enableNotification"
                 checked={enableNotification}
-                onCheckedChange={setEnableNotification}
+                onCheckedChange={async (checked) => {
+                  setEnableNotification(checked);
+                  
+                  if (checked && !hasNotificationPermission) {
+                    const granted = await NotificationService.requestPermissions();
+                    setHasNotificationPermission(granted);
+                    
+                    if (!granted) {
+                      toast({
+                        title: "Notification permission required",
+                        description: "Please enable notifications in your browser/device settings",
+                        variant: "destructive"
+                      });
+                    }
+                  }
+                }}
               />
               <Label htmlFor="enableNotification" className="cursor-pointer">
                 <div className="flex items-center">
@@ -187,6 +241,12 @@ const AddTaskDialog: React.FC<AddTaskDialogProps> = ({ isOpen, onClose }) => {
                 </div>
               </Label>
             </div>
+            
+            {enableNotification && (!dueDate || !dueTime) && (
+              <p className="text-xs text-amber-500">
+                Please set both date and time to enable notifications
+              </p>
+            )}
           </div>
           
           <div className="space-y-2">

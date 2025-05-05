@@ -1,5 +1,7 @@
+
 import React, { createContext, useContext, useEffect, useReducer, ReactNode } from 'react';
 import NotificationService from '../services/NotificationService';
+import { toast } from '@/components/ui/use-toast';
 
 export interface Task {
   id: string;
@@ -212,29 +214,76 @@ export const TaskProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
         const customSound = localStorage.getItem('customTaskSound') ? 
           'custom-task-sound.mp3' : 'beep.wav';
 
-        await NotificationService.scheduleTaskNotification(
+        const scheduled = await NotificationService.scheduleTaskNotification(
           newTask.id,
           'Task Due',
           `Task "${newTask.title}" is due now!`,
           dueDate,
           customSound
         );
+        
+        if (scheduled) {
+          console.log(`Notification scheduled for task ${newTask.id} at ${dueDate.toISOString()}`);
+          toast({
+            title: "Reminder set",
+            description: `You'll be notified when "${newTask.title}" is due`,
+          });
+        }
       } catch (error) {
         console.error('Failed to schedule task notification:', error);
+        toast({
+          title: "Notification error",
+          description: "Failed to schedule reminder. Check notification permissions.",
+          variant: "destructive"
+        });
       }
     }
   };
 
   const updateTask = (task: Task) => {
     dispatch({ type: 'UPDATE_TASK', payload: task });
+    
+    // If the task has a notification, update it
+    if (task.hasNotification && task.dueDate && task.dueTime) {
+      try {
+        // Cancel existing notification
+        NotificationService.cancelNotification(task.id);
+        
+        // Schedule new notification
+        const dueDate = new Date(task.dueDate);
+        const [hours, minutes] = task.dueTime.split(':').map(Number);
+        dueDate.setHours(hours, minutes);
+        
+        NotificationService.scheduleTaskNotification(
+          task.id,
+          'Task Due',
+          `Task "${task.title}" is due now!`,
+          dueDate
+        );
+      } catch (error) {
+        console.error('Failed to update task notification:', error);
+      }
+    } else if (!task.hasNotification) {
+      // Cancel notification if it's been turned off
+      NotificationService.cancelNotification(task.id);
+    }
   };
 
   const deleteTask = (id: string) => {
+    // Cancel any scheduled notifications for this task
+    NotificationService.cancelNotification(id);
     dispatch({ type: 'DELETE_TASK', payload: id });
   };
 
   const toggleComplete = (id: string) => {
+    const task = state.tasks.find(t => t.id === id);
+    
     dispatch({ type: 'TOGGLE_COMPLETE', payload: id });
+    
+    // If completing a task, cancel any notifications
+    if (task && !task.completed) {
+      NotificationService.cancelNotification(id);
+    }
   };
 
   const toggleSubtask = (taskId: string, subtaskId: string) => {
