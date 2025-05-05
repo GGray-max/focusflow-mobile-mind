@@ -1,3 +1,4 @@
+
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
@@ -79,4 +80,45 @@
   .dark-gradient {
     @apply bg-gradient-to-br from-gray-800 to-gray-900 text-white;
   }
+  
+  /* Add dark mode specific text utilities */
+  .dark-text-visible {
+    @apply text-gray-800 dark:text-gray-200;
+  }
+  
+  .dark-text-muted {
+    @apply text-gray-600 dark:text-gray-400;
+  }
+  
+  /* Improve card styling in dark mode */
+  .dark-card {
+    @apply bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700;
+  }
+}
+
+/* Global dark mode improvements */
+.dark body {
+  @apply bg-gray-900;
+}
+
+.dark .text-focus-500 {
+  @apply text-focus-300;
+}
+
+.dark .text-gray-500 {
+  @apply text-gray-400;
+}
+
+/* Dark mode button improvements */
+.dark button.bg-focus-400 {
+  @apply bg-focus-500 hover:bg-focus-600;
+}
+
+/* Improve contrast for inputs in dark mode */
+.dark input, .dark textarea, .dark select {
+  @apply bg-gray-800 border-gray-700 text-gray-100;
+}
+
+.dark input::placeholder, .dark textarea::placeholder {
+  @apply text-gray-500;
 }

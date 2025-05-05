@@ -51,10 +51,6 @@ const VirtualTree: React.FC = () => {
     }
   };
 
-  if (mode !== 'focus') {
-    return null;
-  }
-
   // Generate leaves around the tree based on current stage
   const renderLeaves = () => {
     const leaves = [];
@@ -152,32 +148,30 @@ const VirtualTree: React.FC = () => {
         )}
       </motion.div>
       
-      {isRunning && (
-        <motion.div 
-          className="mt-3 text-xs text-gray-500"
-          initial={{ opacity: 0, y: 5 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.3 }}
-        >
-          {treeHealth === 100 ? (
-            <p className="text-green-600">Your tree is growing beautifully! <span className="text-sm">✨</span></p>
-          ) : treeHealth > 50 ? (
-            <p className="text-green-500">Keep focusing, your tree is growing! <span className="text-sm">🌱</span></p>
-          ) : treeHealth > 25 ? (
-            <p className="text-amber-500">Don't leave! Your tree needs attention.</p>
-          ) : treeHealth > 0 ? (
-            <p className="text-red-500 animate-pulse">Your tree is dying! Come back!</p>
-          ) : (
-            <p className="text-gray-500">Your tree has died. Start a new session.</p>
-          )}
-          
-          {isRunning && treeHealth > 0 && (
-            <p className="mt-1 text-xs opacity-75">
-              Tap the tree to water it
-            </p>
-          )}
-        </motion.div>
-      )}
+      <motion.div 
+        className="mt-3 text-xs text-gray-500 dark:text-gray-400"
+        initial={{ opacity: 0, y: 5 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ delay: 0.3 }}
+      >
+        {treeHealth === 100 ? (
+          <p className="text-green-600 dark:text-green-500">Your tree is growing beautifully! <span className="text-sm">✨</span></p>
+        ) : treeHealth > 50 ? (
+          <p className="text-green-500 dark:text-green-400">Keep focusing, your tree is growing! <span className="text-sm">🌱</span></p>
+        ) : treeHealth > 25 ? (
+          <p className="text-amber-500">Don't leave! Your tree needs attention.</p>
+        ) : treeHealth > 0 ? (
+          <p className="text-red-500 animate-pulse">Your tree is dying! Come back!</p>
+        ) : (
+          <p className="text-gray-500">Your tree has died. Start a new session.</p>
+        )}
+        
+        {isRunning && treeHealth > 0 && (
+          <p className="mt-1 text-xs opacity-75">
+            Tap the tree to water it
+          </p>
+        )}
+      </motion.div>
     </div>
   );
 };

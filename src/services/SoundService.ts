@@ -19,6 +19,11 @@ class SoundService {
         src: ['/sounds/timer-tick.mp3'],
         volume: 0.3,
         preload: true
+      }),
+      taskNotification: new Howl({
+        src: ['/sounds/timer-complete.mp3'], // Reuse the timer sound for task notification by default
+        volume: 0.7,
+        preload: true
       })
     };
     
@@ -100,64 +105,78 @@ class SoundService {
   async setCustomSound(type: 'timer' | 'task', fileUrl: string, fileName: string) {
     try {
       if (type === 'timer') {
-        // Store the sound in localStorage
-        localStorage.setItem('customTimerSound', fileUrl);
-        localStorage.setItem('customTimerSoundName', fileName);
-        
         // Create a Howl for in-app playback
-        this.customSounds.timerComplete = new Howl({
+        const newSound = new Howl({
           src: [fileUrl],
           volume: 0.7,
           preload: true
         });
         
-        this.customSoundNames.timerComplete = fileName;
-        
-        // For native notifications, we need to save the file locally
-        if (Capacitor.isNativePlatform()) {
-          try {
-            // Convert blob URL to file and save it to app storage
-            const response = await fetch(fileUrl);
-            const blob = await response.blob();
-            
-            // Save to device storage using a FileSystem plugin would go here
-            // For now, we'll use the blob URL as is since we're storing in localStorage
+        // Test play the sound to see if it works
+        newSound.once('load', () => {
+          // Store the sound in localStorage
+          localStorage.setItem('customTimerSound', fileUrl);
+          localStorage.setItem('customTimerSoundName', fileName);
+          
+          this.customSounds.timerComplete = newSound;
+          this.customSoundNames.timerComplete = fileName;
+          
+          // For native notifications, save to device storage if on a native platform
+          if (Capacitor.isNativePlatform()) {
+            // Implementation for saving to device storage would go here
             console.log('Custom timer sound set for notifications');
-          } catch (error) {
-            console.error('Error saving custom timer sound to device:', error);
           }
-        }
-      } else {
-        // Store the task notification sound
-        localStorage.setItem('customTaskSound', fileUrl);
-        localStorage.setItem('customTaskSoundName', fileName);
+        });
         
-        // Create a Howl for in-app playback
-        this.customSounds.taskNotification = new Howl({
+        // Handle load errors
+        newSound.once('loaderror', () => {
+          toast({
+            title: "Error loading sound",
+            description: "The selected file is not a valid audio file",
+            variant: "destructive"
+          });
+          return false;
+        });
+        
+      } else {
+        // For task notifications
+        const newSound = new Howl({
           src: [fileUrl],
           volume: 0.7,
           preload: true
         });
         
-        this.customSoundNames.taskNotification = fileName;
-        
-        // For native notifications
-        if (Capacitor.isNativePlatform()) {
-          try {
-            // Convert blob URL to file and save to app storage (similar to timer sound)
-            const response = await fetch(fileUrl);
-            const blob = await response.blob();
-            
-            // Implementation would involve a FileSystem plugin
+        newSound.once('load', () => {
+          // Store the task notification sound
+          localStorage.setItem('customTaskSound', fileUrl);
+          localStorage.setItem('customTaskSoundName', fileName);
+          
+          this.customSounds.taskNotification = newSound;
+          this.customSoundNames.taskNotification = fileName;
+          
+          if (Capacitor.isNativePlatform()) {
+            // Implementation for saving to device storage would go here
             console.log('Custom task sound set for notifications');
-          } catch (error) {
-            console.error('Error saving custom task sound to device:', error);
           }
-        }
+        });
+        
+        newSound.once('loaderror', () => {
+          toast({
+            title: "Error loading sound",
+            description: "The selected file is not a valid audio file",
+            variant: "destructive"
+          });
+          return false;
+        });
       }
       return true;
     } catch (error) {
       console.error('Error setting custom sound:', error);
+      toast({
+        title: "Error setting custom sound",
+        description: "Failed to set custom sound. Please try again.",
+        variant: "destructive"
+      });
       return false;
     }
   }

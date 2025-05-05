@@ -7,7 +7,7 @@ import { Card } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { Switch } from '@/components/ui/switch';
-import { Clock, Volume2, VolumeX, Moon, Sun } from 'lucide-react';
+import { Clock, Volume2, VolumeX, Moon, Sun, Play } from 'lucide-react';
 import SoundService from '@/services/SoundService';
 import { toast } from '@/components/ui/use-toast';
 
@@ -23,6 +23,17 @@ const TimerSettings: React.FC = () => {
   const [isDarkMode, setIsDarkMode] = useState(() => {
     return document.documentElement.classList.contains('dark');
   });
+  
+  const [customTimerSound, setCustomTimerSound] = useState<string | null>(null);
+  const [customTaskSound, setCustomTaskSound] = useState<string | null>(null);
+  
+  // Load custom sound names when component mounts
+  useEffect(() => {
+    const timerSoundName = SoundService.getCustomSoundName('timer');
+    const taskSoundName = SoundService.getCustomSoundName('task');
+    setCustomTimerSound(timerSoundName);
+    setCustomTaskSound(taskSoundName);
+  }, []);
   
   // Format total time
   const formatTotalTime = (seconds: number) => {
@@ -82,6 +93,44 @@ const TimerSettings: React.FC = () => {
       title: newDarkMode ? "Dark mode enabled" : "Light mode disabled",
       description: "Your theme preference has been saved",
     });
+  };
+  
+  // Function to select custom sound
+  const handleSelectCustomSound = async (type: 'timer' | 'task') => {
+    const fileData = await SoundService.getFileFromDevice();
+    if (fileData) {
+      const success = await SoundService.setCustomSound(type, fileData.url, fileData.name);
+      if (success) {
+        toast({
+          title: `Custom ${type} sound set`,
+          description: `${fileData.name} will now be used for ${type} notifications`,
+        });
+        
+        // Update the displayed sound name
+        if (type === 'timer') {
+          setCustomTimerSound(fileData.name);
+        } else {
+          setCustomTaskSound(fileData.name);
+        }
+      }
+    }
+  };
+  
+  // Function to preview custom sound
+  const previewSound = (type: 'timer' | 'task') => {
+    if (type === 'timer') {
+      SoundService.play('timerComplete');
+      toast({
+        title: "Preview timer sound",
+        description: "Playing timer completion sound",
+      });
+    } else {
+      SoundService.play('taskNotification');
+      toast({
+        title: "Preview task sound",
+        description: "Playing task notification sound",
+      });
+    }
   };
   
   return (
@@ -152,34 +201,13 @@ const TimerSettings: React.FC = () => {
       </Card>
       
       <Card className="p-4 border-focus-200 dark:border-focus-700 dark:bg-gray-800/90 dark:shadow-lg transition-all">
-        <h3 className="font-medium mb-3">Distraction Blocking</h3>
-        <p className="text-sm text-gray-500 dark:text-gray-400 mb-4">
-          The app will help you stay focused by simulating the blocking of 
-          distracting websites and apps during focus sessions.
-        </p>
+        <h3 className="font-medium mb-3 text-foreground">Sound Settings</h3>
         
-        <div className="space-y-3 mt-4">
-          <Label className="text-sm">Apps to block during focus time</Label>
-          <div className="flex gap-2">
-            <Input 
-              placeholder="Add app name"
-              className="flex-1 dark:bg-gray-700 dark:border-gray-600"
-              disabled // Simulated functionality
-            />
-            <Button variant="outline" disabled>Add</Button>
-          </div>
-          <div className="pt-2 mb-4">
-            <p className="text-xs text-gray-500 dark:text-gray-400 italic">
-              Note: The blocking is simulated in this offline mobile app. 
-              For actual website/app blocking, you'll need a dedicated 
-              system-level blocking app.
-            </p>
-          </div>
-          
-          <div className="space-y-2 border-t pt-4 mt-4 dark:border-gray-700 transition-colors">
-            <Label className="text-sm">Sound Settings</Label>
+        <div className="space-y-4 mt-4">
+          <div className="space-y-2">
+            <Label className="text-sm text-foreground">Timer Completion Sound</Label>
             <div className="flex items-center justify-between p-2 rounded-md hover:bg-gray-50 dark:hover:bg-gray-700/60 transition-colors">
-              <span className="text-sm flex items-center gap-2">
+              <span className="text-sm flex items-center gap-2 text-foreground">
                 {soundEnabled ? 
                   <Volume2 size={16} className="text-focus-400" /> : 
                   <VolumeX size={16} className="text-gray-400" />
@@ -192,8 +220,39 @@ const TimerSettings: React.FC = () => {
                 id="sound-enabled" 
               />
             </div>
+            
+            {soundEnabled && (
+              <div className="ml-6 space-y-3 mt-2">
+                <div className="flex items-center gap-2">
+                  <Button 
+                    size="sm" 
+                    variant="outline" 
+                    onClick={() => handleSelectCustomSound('timer')}
+                    className="text-xs"
+                  >
+                    Select Custom Sound
+                  </Button>
+                  <Button 
+                    size="sm" 
+                    variant="outline" 
+                    onClick={() => previewSound('timer')}
+                    className="text-xs flex items-center gap-1"
+                  >
+                    <Play size={12} /> Preview
+                  </Button>
+                </div>
+                {customTimerSound && (
+                  <p className="text-xs text-focus-400 dark:text-focus-300">
+                    Current: {customTimerSound}
+                  </p>
+                )}
+              </div>
+            )}
+          </div>
+          
+          <div className="space-y-2">
             <div className="flex items-center justify-between p-2 rounded-md hover:bg-gray-50 dark:hover:bg-gray-700/60 transition-colors">
-              <span className="text-sm flex items-center gap-2">
+              <span className="text-sm flex items-center gap-2 text-foreground">
                 {tickEnabled ? 
                   <Volume2 size={16} className="text-focus-400" /> : 
                   <VolumeX size={16} className="text-gray-400" />
@@ -206,11 +265,66 @@ const TimerSettings: React.FC = () => {
                 id="tick-sound-enabled" 
               />
             </div>
-            <div className="pt-2">
-              <p className="text-xs text-gray-500 dark:text-gray-400">
-                Sounds will play when your timer completes or when approaching the end
-              </p>
+          </div>
+          
+          <div className="space-y-2 mt-4">
+            <Label className="text-sm text-foreground">Task Notification Sound</Label>
+            <div className="flex items-center gap-2">
+              <Button 
+                size="sm" 
+                variant="outline" 
+                onClick={() => handleSelectCustomSound('task')}
+                className="text-xs"
+              >
+                Select Custom Sound
+              </Button>
+              <Button 
+                size="sm" 
+                variant="outline" 
+                onClick={() => previewSound('task')}
+                className="text-xs flex items-center gap-1"
+              >
+                <Play size={12} /> Preview
+              </Button>
             </div>
+            {customTaskSound && (
+              <p className="text-xs text-focus-400 dark:text-focus-300">
+                Current: {customTaskSound}
+              </p>
+            )}
+          </div>
+          
+          <div className="pt-2">
+            <p className="text-xs text-gray-500 dark:text-gray-400">
+              Sounds will play when your timer completes or when tasks reach their due time
+            </p>
+          </div>
+        </div>
+      </Card>
+      
+      <Card className="p-4 border-focus-200 dark:border-focus-700 dark:bg-gray-800/90 dark:shadow-lg transition-all">
+        <h3 className="font-medium mb-3 text-foreground">Distraction Blocking</h3>
+        <p className="text-sm text-gray-500 dark:text-gray-400 mb-4">
+          The app will help you stay focused by simulating the blocking of 
+          distracting websites and apps during focus sessions.
+        </p>
+        
+        <div className="space-y-3 mt-4">
+          <Label className="text-sm text-foreground">Apps to block during focus time</Label>
+          <div className="flex gap-2">
+            <Input 
+              placeholder="Add app name"
+              className="flex-1 dark:bg-gray-700 dark:border-gray-600 text-foreground"
+              disabled // Simulated functionality
+            />
+            <Button variant="outline" disabled>Add</Button>
+          </div>
+          <div className="pt-2 mb-4">
+            <p className="text-xs text-gray-500 dark:text-gray-400 italic">
+              Note: The blocking is simulated in this offline mobile app. 
+              For actual website/app blocking, you'll need a dedicated 
+              system-level blocking app.
+            </p>
           </div>
         </div>
       </Card>

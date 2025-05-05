@@ -41,7 +41,15 @@ const config: CapacitorConfig = {
       releaseType: "APK"
     },
     iconBackground: "#8B5CF6", // Purple background for adaptive icons
-    backgroundColor: "#8B5CF6" // App background color
+    backgroundColor: "#8B5CF6", // App background color
+    icon: "resources/icon", // Focus brain icon
+    icons: [
+      {
+        name: "ic_stat_focus_brain",
+        folder: "resources/notifications",
+        scale: ["mdpi", "hdpi", "xhdpi", "xxhdpi", "xxxhdpi"]
+      }
+    ]
   }
 };
 
