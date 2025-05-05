@@ -149,7 +149,7 @@ const taskReducer = (state: TaskState, action: TaskAction): TaskState => {
 
 type TaskContextType = {
   state: TaskState;
-  addTask: (task: Omit<Task, 'id' | 'createdAt'>) => void;
+  addTask: (task: Omit<Task, 'id' | 'createdAt'>) => Promise<void>;
   updateTask: (task: Task) => void;
   deleteTask: (id: string) => void;
   toggleComplete: (id: string) => void;
@@ -189,7 +189,7 @@ export const TaskProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     }
   }, [state.tasks, state.loading]);
 
-  const addTask = (task: Omit<Task, 'id' | 'createdAt'>) => {
+  const addTask = async (task: Omit<Task, 'id' | 'createdAt'>) => {
     const newTask: Task = {
       ...task,
       id: Date.now().toString(),
