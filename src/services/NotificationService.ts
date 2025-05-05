@@ -1,6 +1,5 @@
 
 import { LocalNotifications, ScheduleOptions, ActionPerformed, Channel } from '@capacitor/local-notifications';
-import { App } from '@capacitor/app';
 import { Capacitor } from '@capacitor/core';
 
 class NotificationService {
@@ -57,16 +56,19 @@ class NotificationService {
     });
 
     // Listen for app resume event to check for pending notifications
-    if (Capacitor.isNativePlatform() && App) {
+    if (Capacitor.isNativePlatform()) {
       try {
-        App.addListener('appStateChange', ({ isActive }) => {
-          if (isActive) {
-            this.checkPendingNotifications();
-          }
-        });
-        console.log('App state change listener registered');
+        // Check if we're on a platform where app state is supported (mobile)
+        if (typeof document !== 'undefined') {
+          document.addEventListener('visibilitychange', () => {
+            if (document.visibilityState === 'visible') {
+              this.checkPendingNotifications();
+            }
+          });
+          console.log('Visibility change listener registered');
+        }
       } catch (error) {
-        console.error('Error registering app state change listener:', error);
+        console.error('Error registering visibility change listener:', error);
       }
     }
   }
@@ -122,8 +124,7 @@ class NotificationService {
             body: body,
             schedule: { 
               at: notificationTime,
-              allowWhileIdle: true, // Ensure delivery even in doze mode
-              exact: true // Use exact timing
+              allowWhileIdle: true // Ensure delivery even in doze mode
             },
             sound: customSound,
             smallIcon: 'ic_stat_notification',
@@ -169,8 +170,7 @@ class NotificationService {
             body: body,
             schedule: { 
               at: scheduledTime,
-              allowWhileIdle: true,
-              exact: true
+              allowWhileIdle: true
             },
             sound: customSound,
             smallIcon: 'ic_stat_notification',
@@ -204,7 +204,8 @@ class NotificationService {
 
   async cancelAllNotifications() {
     try {
-      await LocalNotifications.cancelAll();
+      // Use cancel with empty array to cancel all notifications
+      await LocalNotifications.cancel({ notifications: [] });
       console.log('Cancelled all notifications');
       return true;
     } catch (error) {

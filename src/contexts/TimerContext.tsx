@@ -1,5 +1,6 @@
 import React, { createContext, useContext, useReducer, useEffect, ReactNode } from 'react';
 import SoundService from '@/services/SoundService';
+import { toast } from '@/hooks/use-toast';
 
 type TimerMode = 'focus' | 'break' | 'idle';
 
