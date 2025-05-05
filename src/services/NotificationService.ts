@@ -57,12 +57,17 @@ class NotificationService {
     });
 
     // Listen for app resume event to check for pending notifications
-    if (Capacitor.isNativePlatform()) {
-      App.addListener('appStateChange', ({ isActive }) => {
-        if (isActive) {
-          this.checkPendingNotifications();
-        }
-      });
+    if (Capacitor.isNativePlatform() && App) {
+      try {
+        App.addListener('appStateChange', ({ isActive }) => {
+          if (isActive) {
+            this.checkPendingNotifications();
+          }
+        });
+        console.log('App state change listener registered');
+      } catch (error) {
+        console.error('Error registering app state change listener:', error);
+      }
     }
   }
 

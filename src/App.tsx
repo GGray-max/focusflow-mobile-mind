@@ -1,3 +1,4 @@
+
 import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
@@ -5,7 +6,7 @@ import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route } from "react-router-dom";
 import React, { useEffect } from 'react';
 import NotificationService from './services/NotificationService'; 
-import { Capacitor } from '@capacitor/core'; // Added import for Capacitor
+import { Capacitor } from '@capacitor/core';
 
 import { TaskProvider } from "./contexts/TaskContext";
 import { TimerProvider } from "./contexts/TimerContext";
@@ -24,16 +25,20 @@ const queryClient = new QueryClient();
 const App = () => {
   useEffect(() => {
     const initializeNotifications = async () => {
-      if (Capacitor.isNativePlatform()) {
-        console.log('Requesting notification permissions...');
-        const hasPermission = await NotificationService.requestPermissions();
-        console.log('Notification permissions:', hasPermission ? 'granted' : 'denied');
+      try {
+        if (Capacitor.isNativePlatform()) {
+          console.log('Requesting notification permissions...');
+          const hasPermission = await NotificationService.requestPermissions();
+          console.log('Notification permissions:', hasPermission ? 'granted' : 'denied');
+        } else {
+          console.info('Not a native platform - notification features will be limited');
+        }
+      } catch (error) {
+        console.error('Error initializing notifications:', error);
       }
     };
 
-    initializeNotifications().catch(error => {
-      console.error('Error initializing notifications:', error);
-    });
+    initializeNotifications();
   }, []);
 
   return (

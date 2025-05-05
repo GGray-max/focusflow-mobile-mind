@@ -12,6 +12,7 @@
   },
   "dependencies": {
     "@capacitor/android": "^7.2.0",
+    "@capacitor/app": "^7.0.1",
     "@capacitor/core": "^7.2.0",
     "@capacitor/local-notifications": "^7.0.1",
     "@hookform/resolvers": "^3.9.0",
