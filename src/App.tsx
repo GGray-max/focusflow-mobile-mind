@@ -4,7 +4,8 @@ import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route } from "react-router-dom";
 import React, { useEffect } from 'react';
-import NotificationService from './services/NotificationService'; // Added import
+import NotificationService from './services/NotificationService'; 
+import { Capacitor } from '@capacitor/core'; // Added import for Capacitor
 
 import { TaskProvider } from "./contexts/TaskContext";
 import { TimerProvider } from "./contexts/TimerContext";
@@ -21,18 +22,18 @@ import NotFound from "./pages/NotFound";
 const queryClient = new QueryClient();
 
 const App = () => {
-  // Request notification permissions when the app starts
   useEffect(() => {
-    const initNotifications = async () => {
-      try {
-        await NotificationService.requestPermissions();
-        console.log('Notification permissions requested');
-      } catch (error) {
-        console.error('Error requesting notification permissions:', error);
+    const initializeNotifications = async () => {
+      if (Capacitor.isNativePlatform()) {
+        console.log('Requesting notification permissions...');
+        const hasPermission = await NotificationService.requestPermissions();
+        console.log('Notification permissions:', hasPermission ? 'granted' : 'denied');
       }
     };
-    
-    initNotifications();
+
+    initializeNotifications().catch(error => {
+      console.error('Error initializing notifications:', error);
+    });
   }, []);
 
   return (
