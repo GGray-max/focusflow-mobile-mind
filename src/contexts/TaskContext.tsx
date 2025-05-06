@@ -1,4 +1,3 @@
-
 import React, { createContext, useContext, useEffect, useReducer, ReactNode } from 'react';
 import NotificationService from '../services/NotificationService';
 import { toast } from '@/components/ui/use-toast';
@@ -242,17 +241,12 @@ export const TaskProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
           const [hours, minutes] = newTask.dueTime.split(':').map(Number);
           dueDate.setHours(hours, minutes);
         }
-        
-        // Try to get custom notification sound from localStorage
-        const customSound = localStorage.getItem('customTaskSound') ? 
-          'custom-task-sound.mp3' : 'beep.wav';
 
         const scheduled = await NotificationService.scheduleTaskNotification(
           newTask.id,
           'Task Due',
           `Task "${newTask.title}" is due now!`,
-          dueDate,
-          customSound
+          dueDate
         );
         
         if (scheduled) {

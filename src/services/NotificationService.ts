@@ -248,7 +248,8 @@ class NotificationService {
 
   async cancelAllNotifications() {
     try {
-      await LocalNotifications.cancelAll();
+      // Fix: Use cancel with empty notifications array instead of cancelAll which doesn't exist
+      await LocalNotifications.cancel({ notifications: [] });
       console.log('Cancelled all notifications');
       return true;
     } catch (error) {
