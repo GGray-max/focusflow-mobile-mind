@@ -6,14 +6,15 @@ const config: CapacitorConfig = {
   appName: 'FocusTask',
   webDir: 'dist',
   server: {
-    androidScheme: 'https'
+    androidScheme: 'https',
+    cleartext: true // Allow cleartext connections for debugging
   },
   // Capacitor plugin configuration
   plugins: {
     LocalNotifications: {
       smallIcon: "ic_stat_focus_brain",
       iconColor: "#8B5CF6",
-      sound: "beep.wav",
+      sound: true, // Enable sounds
       // Enable exact notifications and background support
       schedule: {
         allowWhileIdle: true
@@ -43,6 +44,7 @@ const config: CapacitorConfig = {
     iconBackground: "#8B5CF6", // Purple background for adaptive icons
     backgroundColor: "#8B5CF6", // App background color
     icon: "resources/icon", // Focus brain icon
+    // Define custom notification icons
     icons: [
       {
         name: "ic_stat_focus_brain",
@@ -50,6 +52,10 @@ const config: CapacitorConfig = {
         scale: ["mdpi", "hdpi", "xhdpi", "xxhdpi", "xxxhdpi"]
       }
     ]
+  },
+  // Make sure background task handling is enabled for iOS
+  ios: {
+    contentInset: "always"
   }
 };
 

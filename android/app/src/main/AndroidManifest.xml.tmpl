@@ -21,14 +21,16 @@
             </intent-filter>
         </activity>
 
-        <!-- Broadcast receiver for device boot -->
+        <!-- Enhanced broadcast receiver for device boot -->
         <receiver
             android:name="com.getcapacitor.plugin.notification.NotificationRestoreReceiver"
+            android:enabled="true"
             android:exported="true">
             <intent-filter>
                 <action android:name="android.intent.action.BOOT_COMPLETED" />
                 <action android:name="android.intent.action.QUICKBOOT_POWERON" />
                 <action android:name="com.htc.intent.action.QUICKBOOT_POWERON" />
+                <action android:name="android.intent.action.MY_PACKAGE_REPLACED" />
                 <category android:name="android.intent.category.DEFAULT" />
             </intent-filter>
         </receiver>
@@ -43,9 +45,10 @@
                 android:resource="@xml/file_paths" />
         </provider>
 
-        <!-- Service for exact alarms (notification delivery) -->
+        <!-- Enhanced service for exact alarms and notification delivery -->
         <service
             android:name="com.getcapacitor.plugin.notification.NotificationService"
+            android:foregroundServiceType="dataSync"
             android:exported="false" />
     </application>
     
@@ -54,15 +57,20 @@
     <uses-permission android:name="android.permission.READ_EXTERNAL_STORAGE" android:maxSdkVersion="32" />
     <uses-permission android:name="android.permission.WRITE_EXTERNAL_STORAGE" android:maxSdkVersion="32" />
     <uses-permission android:name="android.permission.READ_MEDIA_AUDIO" />
+    <uses-permission android:name="android.permission.READ_MEDIA_IMAGES" />
     
-    <!-- Notification permissions -->
+    <!-- Enhanced notification permissions -->
     <uses-permission android:name="android.permission.SCHEDULE_EXACT_ALARM" />
     <uses-permission android:name="android.permission.USE_EXACT_ALARM" />
     <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
     <uses-permission android:name="android.permission.RECEIVE_BOOT_COMPLETED" />
     <uses-permission android:name="android.permission.VIBRATE" />
     
-    <!-- Alarms and wakeup permissions -->
+    <!-- Enhanced alarms and wakeup permissions -->
     <uses-permission android:name="android.permission.WAKE_LOCK" />
     <uses-permission android:name="android.permission.FOREGROUND_SERVICE" />
+    <uses-permission android:name="android.permission.FOREGROUND_SERVICE_DATA_SYNC" />
+    
+    <!-- System alarm permission -->
+    <uses-permission android:name="android.permission.REQUEST_IGNORE_BATTERY_OPTIMIZATIONS" />
 </manifest>
