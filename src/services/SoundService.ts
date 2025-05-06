@@ -126,6 +126,9 @@ class SoundService {
             // Implementation for saving to device storage would go here
             console.log('Custom timer sound set for notifications');
           }
+          
+          // Play the sound once to let the user hear it
+          newSound.play();
         });
         
         // Handle load errors
@@ -158,6 +161,9 @@ class SoundService {
             // Implementation for saving to device storage would go here
             console.log('Custom task sound set for notifications');
           }
+          
+          // Play the sound once to let the user hear it
+          newSound.play();
         });
         
         newSound.once('loaderror', () => {

@@ -9,7 +9,7 @@ export interface Task {
   description?: string;
   completed: boolean;
   createdAt: string;
-  completedAt?: string; // New: track when tasks are completed
+  completedAt?: string; // Track when tasks are completed
   dueDate?: string;
   dueTime?: string; // Time for notifications
   notifyAt?: string; // Exact date and time for notification
@@ -18,6 +18,10 @@ export interface Task {
   tags: string[];
   subtasks: SubTask[];
   isPriority: boolean;
+  recurrence?: 'none' | 'daily' | 'weekly' | 'monthly'; // New: recurrence property
+  isMonthlyTask?: boolean; // New: flag for monthly task
+  isActive?: boolean; // New: track if recurring task is active
+  lastCompleted?: string; // New: track when recurring task was last completed
 }
 
 export interface SubTask {
@@ -42,7 +46,8 @@ type TaskAction =
   | { type: 'SET_ERROR'; payload: string }
   | { type: 'ADD_SUBTASK'; payload: { taskId: string; subtask: SubTask } }
   | { type: 'DELETE_SUBTASK'; payload: { taskId: string; subtaskId: string } }
-  | { type: 'TOGGLE_PRIORITY'; payload: string };
+  | { type: 'TOGGLE_PRIORITY'; payload: string }
+  | { type: 'TOGGLE_RECURRENCE_STATE'; payload: string }; // New: toggle recurring task active state
 
 const initialState: TaskState = {
   tasks: [],
@@ -72,15 +77,28 @@ const taskReducer = (state: TaskState, action: TaskAction): TaskState => {
     case 'TOGGLE_COMPLETE':
       return {
         ...state,
-        tasks: state.tasks.map((task) =>
-          task.id === action.payload
-            ? { 
-                ...task, 
-                completed: !task.completed, 
-                completedAt: !task.completed ? new Date().toISOString() : undefined 
-              }
-            : task
-        ),
+        tasks: state.tasks.map((task) => {
+          if (task.id !== action.payload) return task;
+          
+          const now = new Date().toISOString();
+          const newCompletedStatus = !task.completed;
+          
+          // Handle recurring tasks
+          if (task.recurrence && task.recurrence !== 'none' && newCompletedStatus) {
+            // For recurring tasks, we don't mark as completed but record last completion
+            return {
+              ...task,
+              lastCompleted: now,
+            };
+          }
+          
+          // Regular tasks or monthly tasks
+          return {
+            ...task, 
+            completed: newCompletedStatus, 
+            completedAt: newCompletedStatus ? now : undefined 
+          };
+        }),
       };
     case 'TOGGLE_SUBTASK':
       return {
@@ -145,6 +163,15 @@ const taskReducer = (state: TaskState, action: TaskAction): TaskState => {
             : task
         ),
       };
+    case 'TOGGLE_RECURRENCE_STATE':
+      return {
+        ...state,
+        tasks: state.tasks.map((task) =>
+          task.id === action.payload
+            ? { ...task, isActive: !task.isActive }
+            : task
+        ),
+      };
     default:
       return state;
   }
@@ -160,6 +187,7 @@ type TaskContextType = {
   addSubtask: (taskId: string, subtaskTitle: string) => void;
   deleteSubtask: (taskId: string, subtaskId: string) => void;
   togglePriority: (id: string) => void;
+  toggleRecurrenceState: (id: string) => void; // New: toggle recurring task state
 };
 
 const TaskContext = createContext<TaskContextType | undefined>(undefined);
@@ -193,12 +221,17 @@ export const TaskProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
   }, [state.tasks, state.loading]);
 
   const addTask = async (task: Omit<Task, 'id' | 'createdAt'>) => {
+    const now = new Date().toISOString();
+    const taskId = Date.now().toString();
+    
     const newTask: Task = {
       ...task,
-      id: Date.now().toString(),
-      createdAt: new Date().toISOString(),
+      id: taskId,
+      createdAt: now,
       hasNotification: task.hasNotification || false,
+      isActive: task.recurrence && task.recurrence !== 'none' ? true : undefined,
     };
+    
     dispatch({ type: 'ADD_TASK', payload: newTask });
 
     // Schedule notification if due date exists
@@ -278,10 +311,12 @@ export const TaskProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
   const toggleComplete = (id: string) => {
     const task = state.tasks.find(t => t.id === id);
     
+    if (!task) return;
+    
     dispatch({ type: 'TOGGLE_COMPLETE', payload: id });
     
-    // If completing a task, cancel any notifications
-    if (task && !task.completed) {
+    // If completing a non-recurring task, cancel any notifications
+    if (!task.completed && (!task.recurrence || task.recurrence === 'none')) {
       NotificationService.cancelNotification(id);
     }
   };
@@ -313,6 +348,10 @@ export const TaskProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     dispatch({ type: 'TOGGLE_PRIORITY', payload: id });
   };
 
+  const toggleRecurrenceState = (id: string) => {
+    dispatch({ type: 'TOGGLE_RECURRENCE_STATE', payload: id });
+  };
+
   return (
     <TaskContext.Provider
       value={{
@@ -325,6 +364,7 @@ export const TaskProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
         addSubtask,
         deleteSubtask,
         togglePriority,
+        toggleRecurrenceState,
       }}
     >
       {children}

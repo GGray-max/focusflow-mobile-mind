@@ -60,16 +60,10 @@ class NotificationService {
       if (Capacitor.isNativePlatform()) {
         try {
           // Check if we're on a platform where app state is supported (mobile)
-          if (typeof document !== 'undefined') {
-            document.addEventListener('visibilitychange', () => {
-              if (document.visibilityState === 'visible') {
-                this.checkPendingNotifications();
-              }
-            });
-            console.log('Visibility change listener registered');
-          }
+          document.addEventListener('resume', this.checkPendingNotifications);
+          console.log('Resume event listener registered');
         } catch (error) {
-          console.error('Error registering visibility change listener:', error);
+          console.error('Error registering resume event listener:', error);
         }
       }
     } catch (error) {

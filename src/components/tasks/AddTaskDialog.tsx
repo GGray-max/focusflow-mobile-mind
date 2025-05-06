@@ -5,7 +5,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
-import { CalendarIcon, Clock, BellRing } from 'lucide-react';
+import { CalendarIcon, Clock, BellRing, RepeatIcon } from 'lucide-react';
 import { Calendar } from '@/components/ui/calendar';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { format } from 'date-fns';
@@ -13,6 +13,7 @@ import { cn } from '@/lib/utils';
 import { useTasks, Task } from '@/contexts/TaskContext';
 import { Textarea } from '@/components/ui/textarea';
 import { Switch } from '@/components/ui/switch';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import NotificationService from '@/services/NotificationService';
 import { toast } from '@/components/ui/use-toast';
 
@@ -31,6 +32,8 @@ const AddTaskDialog: React.FC<AddTaskDialogProps> = ({ isOpen, onClose }) => {
   const [newSubtask, setNewSubtask] = useState('');
   const [enableNotification, setEnableNotification] = useState(false);
   const [hasNotificationPermission, setHasNotificationPermission] = useState(false);
+  const [recurrence, setRecurrence] = useState<'none' | 'daily' | 'weekly' | 'monthly'>('none');
+  const [isMonthlyTask, setIsMonthlyTask] = useState(false);
 
   const { addTask } = useTasks();
 
@@ -77,6 +80,9 @@ const AddTaskDialog: React.FC<AddTaskDialogProps> = ({ isOpen, onClose }) => {
         completed: false,
       })),
       isPriority: false,
+      recurrence: recurrence, // Add recurrence type
+      isMonthlyTask: isMonthlyTask, // Add monthly task flag
+      isActive: recurrence !== 'none' ? true : undefined, // Recurring tasks are active by default
     };
     
     addTask(newTask);
@@ -140,6 +146,8 @@ const AddTaskDialog: React.FC<AddTaskDialogProps> = ({ isOpen, onClose }) => {
     setSubtasks([]);
     setNewSubtask('');
     setEnableNotification(false);
+    setRecurrence('none');
+    setIsMonthlyTask(false);
     onClose();
   };
 
@@ -170,6 +178,43 @@ const AddTaskDialog: React.FC<AddTaskDialogProps> = ({ isOpen, onClose }) => {
               placeholder="Enter task details"
               rows={3}
             />
+          </div>
+          
+          {/* Task Type - Monthly or Regular */}
+          <div className="flex items-center space-x-2">
+            <Switch
+              id="monthlyTask"
+              checked={isMonthlyTask}
+              onCheckedChange={setIsMonthlyTask}
+            />
+            <Label htmlFor="monthlyTask">This is a monthly task</Label>
+          </div>
+          
+          {/* Recurrence Options */}
+          <div className="space-y-2">
+            <Label htmlFor="recurrence">Repeat Task</Label>
+            <Select 
+              value={recurrence} 
+              onValueChange={(value) => setRecurrence(value as 'none' | 'daily' | 'weekly' | 'monthly')}
+            >
+              <SelectTrigger className="w-full" id="recurrence">
+                <SelectValue placeholder="Select recurrence" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="none">Does not repeat</SelectItem>
+                <SelectItem value="daily">Daily</SelectItem>
+                <SelectItem value="weekly">Weekly</SelectItem>
+                <SelectItem value="monthly">Monthly</SelectItem>
+              </SelectContent>
+            </Select>
+            {recurrence !== 'none' && (
+              <div className="flex items-center mt-2 px-3 py-2 rounded-md bg-focus-100 dark:bg-focus-900/20">
+                <RepeatIcon className="h-4 w-4 mr-2 text-focus-500" />
+                <span className="text-sm text-focus-600 dark:text-focus-300">
+                  This task will automatically repeat {recurrence}
+                </span>
+              </div>
+            )}
           </div>
           
           <div className="space-y-4">
@@ -295,7 +340,7 @@ const AddTaskDialog: React.FC<AddTaskDialogProps> = ({ isOpen, onClose }) => {
               <div className="mt-3 space-y-2">
                 {subtasks.map((task, index) => (
                   <div key={index} className="flex justify-between items-center bg-gray-50 dark:bg-gray-800 p-2 rounded-md">
-                    <span className="text-sm">{task}</span>
+                    <span className="text-sm gray-text-override">{task}</span>
                     <Button 
                       type="button"
                       variant="ghost" 

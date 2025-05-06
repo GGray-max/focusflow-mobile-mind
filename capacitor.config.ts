@@ -14,7 +14,7 @@ const config: CapacitorConfig = {
       smallIcon: "ic_stat_focus_brain",
       iconColor: "#8B5CF6",
       sound: "beep.wav",
-      // Enable exact notifications
+      // Enable exact notifications and background support
       schedule: {
         allowWhileIdle: true
       },

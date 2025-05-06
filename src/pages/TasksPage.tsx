@@ -1,7 +1,8 @@
+
 import React, { useState } from 'react';
 import MobileLayout from '@/components/layout/MobileLayout';
 import { Button } from '@/components/ui/button';
-import { Plus, Filter, Star } from 'lucide-react';
+import { Plus, Filter, Star, Calendar, RepeatIcon } from 'lucide-react';
 import { useTasks, Task } from '@/contexts/TaskContext';
 import TaskItem from '@/components/tasks/TaskItem';
 import AddTaskDialog from '@/components/tasks/AddTaskDialog';
@@ -13,6 +14,8 @@ const TasksPage: React.FC = () => {
   const [isAddTaskDialogOpen, setIsAddTaskDialogOpen] = useState(false);
   const [selectedTask, setSelectedTask] = useState<Task | null>(null);
   const [showOnlyPriority, setShowOnlyPriority] = useState(false);
+  const [showMonthlyTasks, setShowMonthlyTasks] = useState(false);
+  const [showRecurringTasks, setShowRecurringTasks] = useState(false);
   
   const { state, toggleComplete, togglePriority } = useTasks();
   const { tasks, loading } = state;
@@ -21,10 +24,25 @@ const TasksPage: React.FC = () => {
   const incompleteTasks = tasks.filter(task => !task.completed);
   const completedTasks = tasks.filter(task => task.completed);
   
-  // Apply priority filter if needed
-  const filteredIncompleteTasks = showOnlyPriority 
-    ? incompleteTasks.filter(task => task.isPriority)
-    : incompleteTasks;
+  // Apply filters
+  let filteredIncompleteTasks = [...incompleteTasks];
+  
+  // Priority filter
+  if (showOnlyPriority) {
+    filteredIncompleteTasks = filteredIncompleteTasks.filter(task => task.isPriority);
+  }
+  
+  // Monthly tasks filter
+  if (showMonthlyTasks) {
+    filteredIncompleteTasks = filteredIncompleteTasks.filter(task => task.isMonthlyTask);
+  }
+  
+  // Recurring tasks filter
+  if (showRecurringTasks) {
+    filteredIncompleteTasks = filteredIncompleteTasks.filter(
+      task => task.recurrence && task.recurrence !== 'none'
+    );
+  }
 
   // Sort tasks by priority and due date
   const sortedIncompleteTasks = [...filteredIncompleteTasks].sort((a, b) => {
@@ -53,7 +71,7 @@ const TasksPage: React.FC = () => {
         <div className="flex justify-between items-center">
           <div>
             <h1 className="text-3xl font-bold bg-gradient-to-r from-focus-400 to-focus-300 text-transparent bg-clip-text">FocusFlow</h1>
-            <p className="text-gray-500 text-sm">Manage your tasks</p>
+            <p className="text-muted-foreground text-sm">Manage your tasks</p>
           </div>
           
           <div className="space-x-2 flex items-center">
@@ -67,8 +85,39 @@ const TasksPage: React.FC = () => {
                   ? "bg-focus-100 text-focus-400 border-focus-200" 
                   : "hover:border-focus-300 hover:text-focus-400"
               )}
+              title="Priority Tasks"
             >
               <Star size={18} className={showOnlyPriority ? "fill-focus-300" : ""} />
+            </Button>
+            
+            <Button 
+              variant="outline" 
+              size="icon" 
+              onClick={() => setShowMonthlyTasks(!showMonthlyTasks)}
+              className={cn(
+                "rounded-full transition-all", 
+                showMonthlyTasks 
+                  ? "bg-focus-100 text-focus-400 border-focus-200" 
+                  : "hover:border-focus-300 hover:text-focus-400"
+              )}
+              title="Monthly Tasks"
+            >
+              <Calendar size={18} className={showMonthlyTasks ? "text-focus-400" : ""} />
+            </Button>
+            
+            <Button 
+              variant="outline" 
+              size="icon" 
+              onClick={() => setShowRecurringTasks(!showRecurringTasks)}
+              className={cn(
+                "rounded-full transition-all", 
+                showRecurringTasks 
+                  ? "bg-focus-100 text-focus-400 border-focus-200" 
+                  : "hover:border-focus-300 hover:text-focus-400"
+              )}
+              title="Recurring Tasks"
+            >
+              <RepeatIcon size={18} className={showRecurringTasks ? "text-focus-400" : ""} />
             </Button>
             
             <Button 
@@ -100,16 +149,26 @@ const TasksPage: React.FC = () => {
             {loading ? (
               <div className="py-12 flex flex-col items-center justify-center space-y-3">
                 <div className="h-8 w-8 rounded-full border-4 border-focus-300 border-t-transparent animate-spin"></div>
-                <p className="text-gray-500 text-sm">Loading tasks...</p>
+                <p className="text-muted-foreground text-sm">Loading tasks...</p>
               </div>
             ) : sortedIncompleteTasks.length === 0 ? (
               <div className="py-12 flex flex-col items-center justify-center">
                 <div className="bg-gray-100 dark:bg-gray-800 rounded-full p-4 mb-3">
-                  <Star size={30} className="text-gray-400" />
+                  {showMonthlyTasks ? (
+                    <Calendar size={30} className="text-gray-400" />
+                  ) : showRecurringTasks ? (
+                    <RepeatIcon size={30} className="text-gray-400" />
+                  ) : (
+                    <Star size={30} className="text-gray-400" />
+                  )}
                 </div>
-                <p className="text-gray-500 text-center px-4">
+                <p className="text-muted-foreground text-center px-4">
                   {showOnlyPriority 
-                    ? "No priority tasks found" 
+                    ? "No priority tasks found"
+                    : showMonthlyTasks
+                    ? "No monthly tasks found"
+                    : showRecurringTasks
+                    ? "No recurring tasks found" 
                     : "No active tasks found. Add a task to get started!"}
                 </p>
               </div>
@@ -132,14 +191,14 @@ const TasksPage: React.FC = () => {
             {loading ? (
               <div className="py-12 flex flex-col items-center justify-center space-y-3">
                 <div className="h-8 w-8 rounded-full border-4 border-focus-300 border-t-transparent animate-spin"></div>
-                <p className="text-gray-500 text-sm">Loading tasks...</p>
+                <p className="text-muted-foreground text-sm">Loading tasks...</p>
               </div>
             ) : completedTasks.length === 0 ? (
               <div className="py-12 flex flex-col items-center justify-center">
                 <div className="bg-gray-100 dark:bg-gray-800 rounded-full p-4 mb-3">
                   <Filter size={30} className="text-gray-400" />
                 </div>
-                <p className="text-gray-500">No completed tasks yet</p>
+                <p className="text-muted-foreground">No completed tasks yet</p>
               </div>
             ) : (
               <div className="space-y-3">
