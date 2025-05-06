@@ -44,23 +44,25 @@ class SoundService {
         this.customSounds.timerComplete = new Howl({
           src: [customTimerSound],
           volume: 0.7,
-          preload: true
+          preload: true,
+          format: ['mp3', 'wav', 'ogg'] // Support multiple formats
         });
         
         this.customSoundNames.timerComplete = customTimerSoundName || 'Custom Timer Sound';
+        console.log('Loaded custom timer sound:', this.customSoundNames.timerComplete);
       }
       
       if (customTaskSound) {
         this.customSounds.taskNotification = new Howl({
           src: [customTaskSound],
           volume: 0.7,
-          preload: true
+          preload: true,
+          format: ['mp3', 'wav', 'ogg'] // Support multiple formats
         });
         
         this.customSoundNames.taskNotification = customTaskSoundName || 'Custom Task Sound';
+        console.log('Loaded custom task sound:', this.customSoundNames.taskNotification);
       }
-      
-      console.log('Custom sounds loaded:', this.customSoundNames);
     } catch (error) {
       console.error('Error loading custom sounds:', error);
     }
@@ -106,95 +108,88 @@ class SoundService {
   // Enhanced method to set custom sounds for both in-app and notifications
   async setCustomSound(type: 'timer' | 'task', fileUrl: string, fileName: string) {
     try {
-      if (type === 'timer') {
-        // Create a Howl for in-app playback
-        const newSound = new Howl({
-          src: [fileUrl],
-          volume: 0.7,
-          preload: true
-        });
-        
-        // Set up a one-time load event handler
-        return new Promise<boolean>((resolve) => {
-          // Test play the sound to see if it works
-          newSound.once('load', async () => {
+      console.log(`Setting custom ${type} sound:`, fileName, fileUrl);
+      
+      // Force release any existing sound to prevent memory leaks
+      const soundKey = type === 'timer' ? 'timerComplete' : 'taskNotification';
+      if (this.customSounds[soundKey]) {
+        this.customSounds[soundKey].unload();
+      }
+      
+      // Create a Howl for in-app playback with more formats and error handling
+      const newSound = new Howl({
+        src: [fileUrl],
+        volume: 0.7,
+        preload: true,
+        format: ['mp3', 'wav', 'ogg'], // Support multiple formats
+        html5: true, // Use HTML5 Audio for better compatibility
+        onloaderror: () => {
+          console.error(`Failed to load ${type} sound:`, fileName);
+          toast({
+            title: "Error loading sound",
+            description: "The audio file format is not supported",
+            variant: "destructive"
+          });
+        }
+      });
+      
+      // Set up a one-time load event handler
+      return new Promise<boolean>((resolve) => {
+        // Test play the sound to see if it works
+        newSound.once('load', async () => {
+          try {
             // Store the sound in localStorage
-            localStorage.setItem('customTimerSound', fileUrl);
-            localStorage.setItem('customTimerSoundName', fileName);
+            localStorage.setItem(type === 'timer' ? 'customTimerSound' : 'customTaskSound', fileUrl);
+            localStorage.setItem(type === 'timer' ? 'customTimerSoundName' : 'customTaskSoundName', fileName);
             
-            this.customSounds.timerComplete = newSound;
-            this.customSoundNames.timerComplete = fileName;
+            // Update the sound in our service
+            this.customSounds[soundKey] = newSound;
+            this.customSoundNames[soundKey] = fileName;
             
             // For native notifications, prepare sound file for notifications
             if (Capacitor.isNativePlatform()) {
-              try {
-                await this.copyCustomSoundToNative(fileUrl, 'custom-timer-sound.mp3');
-                
-                // Update notification channel
-                await NotificationService.updateCustomSound('timer', fileName);
-              } catch (error) {
-                console.warn('Could not copy sound for native notifications:', error);
-              }
+              const targetFileName = type === 'timer' ? 'custom-timer-sound.mp3' : 'custom-task-sound.mp3';
+              await this.copyCustomSoundToNative(fileUrl, targetFileName);
+              
+              // Update notification channel
+              await NotificationService.updateCustomSound(type, fileName);
             }
             
             // Play the sound once to let the user hear it
             newSound.play();
+            
+            console.log(`Successfully set custom ${type} sound:`, fileName);
             resolve(true);
-          });
-          
-          // Handle load errors
-          newSound.once('loaderror', () => {
-            toast({
-              title: "Error loading sound",
-              description: "The selected file is not a valid audio file",
-              variant: "destructive"
-            });
+          } catch (error) {
+            console.error(`Error finalizing custom ${type} sound:`, error);
             resolve(false);
-          });
-        });
-      } else {
-        // For task notifications
-        const newSound = new Howl({
-          src: [fileUrl],
-          volume: 0.7,
-          preload: true
+          }
         });
         
-        return new Promise<boolean>((resolve) => {
-          newSound.once('load', async () => {
-            // Store the task notification sound
-            localStorage.setItem('customTaskSound', fileUrl);
-            localStorage.setItem('customTaskSoundName', fileName);
-            
-            this.customSounds.taskNotification = newSound;
-            this.customSoundNames.taskNotification = fileName;
-            
-            if (Capacitor.isNativePlatform()) {
-              try {
-                await this.copyCustomSoundToNative(fileUrl, 'custom-task-sound.mp3');
-                
-                // Update notification channel
-                await NotificationService.updateCustomSound('task', fileName);
-              } catch (error) {
-                console.warn('Could not copy sound for native notifications:', error);
-              }
-            }
-            
-            // Play the sound once to let the user hear it
-            newSound.play();
-            resolve(true);
+        // Handle load errors
+        newSound.once('loaderror', () => {
+          console.error(`Error loading ${type} sound:`, fileName);
+          toast({
+            title: "Error loading sound",
+            description: "The selected file is not a valid audio file",
+            variant: "destructive"
           });
-          
-          newSound.once('loaderror', () => {
+          resolve(false);
+        });
+        
+        // Set a timeout in case the sound never loads
+        setTimeout(() => {
+          if (!newSound.state()) {
+            console.error(`Timeout loading ${type} sound:`, fileName);
             toast({
               title: "Error loading sound",
-              description: "The selected file is not a valid audio file",
+              description: "The audio file took too long to load",
               variant: "destructive"
             });
             resolve(false);
-          });
-        });
-      }
+          }
+        }, 5000);
+      });
     } catch (error) {
       console.error('Error setting custom sound:', error);
       toast({
@@ -279,6 +274,36 @@ class SoundService {
       
       input.click();
     });
+  }
+  
+  // Method to clear custom sounds
+  clearCustomSound(type: 'timer' | 'task') {
+    const soundKey = type === 'timer' ? 'timerComplete' : 'taskNotification';
+    
+    // Remove from localStorage
+    localStorage.removeItem(type === 'timer' ? 'customTimerSound' : 'customTaskSound');
+    localStorage.removeItem(type === 'timer' ? 'customTimerSoundName' : 'customTaskSoundName');
+    
+    // Unload the sound
+    if (this.customSounds[soundKey]) {
+      this.customSounds[soundKey].unload();
+      delete this.customSounds[soundKey];
+    }
+    
+    // Clear the name
+    delete this.customSoundNames[soundKey];
+    
+    // Update notification service (for native platforms)
+    if (Capacitor.isNativePlatform()) {
+      NotificationService.updateCustomSound(type, '');
+    }
+    
+    toast({
+      title: `Default ${type} sound restored`,
+      description: `The ${type} sound has been reset to default`,
+    });
+    
+    return true;
   }
 }
 

@@ -4,14 +4,16 @@ import MobileLayout from '@/components/layout/MobileLayout';
 import { Button } from '@/components/ui/button';
 import { Label } from '@/components/ui/label';
 import { Switch } from '@/components/ui/switch';
-import { Trash2, Download, Share2, Music, Moon, Sun } from 'lucide-react';
-import SoundService from '@/services/SoundService';
+import { Trash2, Download, Share2, Moon, Sun } from 'lucide-react';
+import CustomSoundSelector from '@/components/CustomSoundSelector';
 import { Dialog, DialogTrigger, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from '@/components/ui/dialog';
 import { useTimer } from '@/contexts/TimerContext';
 import { useTasks } from '@/contexts/TaskContext';
 import { useProcrastination } from '@/contexts/ProcrastinationContext';
 import { toast } from '@/components/ui/use-toast';
 import NotificationService from '@/services/NotificationService';
+import { motion } from 'framer-motion';
+import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 
 const SettingsPage: React.FC = () => {
   // Would integrate with device notification system in a real mobile app
@@ -21,18 +23,12 @@ const SettingsPage: React.FC = () => {
            (!('darkMode' in localStorage) && 
             window.matchMedia('(prefers-color-scheme: dark)').matches);
   });
-  const [timerSoundName, setTimerSoundName] = React.useState<string | null>(null);
-  const [taskSoundName, setTaskSoundName] = React.useState<string | null>(null);
   
   const { resetTimer } = useTimer();
   const { state: taskState } = useTasks();
   const { state: procrastinationState } = useProcrastination();
   
   useEffect(() => {
-    // Load saved sound names
-    setTimerSoundName(SoundService.getCustomSoundName('timer'));
-    setTaskSoundName(SoundService.getCustomSoundName('task'));
-    
     // Request notification permissions on page load
     const requestNotificationPermissions = async () => {
       const granted = await NotificationService.requestPermissions();
@@ -95,251 +91,197 @@ const SettingsPage: React.FC = () => {
     });
   };
   
-  const handleSetCustomSound = async (type: 'timer' | 'task') => {
-    try {
-      const fileData = await SoundService.getFileFromDevice();
-      if (!fileData) return;
-      
-      const { url, name } = fileData;
-      const success = await SoundService.setCustomSound(type, url, name);
-      
-      if (success) {
-        if (type === 'timer') {
-          setTimerSoundName(name);
-          toast({
-            title: "Timer sound updated",
-            description: `Your custom timer sound has been set to "${name}"`,
-          });
-          // Play a preview
-          SoundService.play('timerComplete');
-        } else {
-          setTaskSoundName(name);
-          toast({
-            title: "Task sound updated",
-            description: `Your custom task sound has been set to "${name}"`,
-          });
-          // Play a preview
-          SoundService.play('taskNotification');
-        }
+  const container = {
+    hidden: { opacity: 0 },
+    show: {
+      opacity: 1,
+      transition: {
+        staggerChildren: 0.1
       }
-    } catch (error) {
-      console.error(`Error setting custom ${type} sound:`, error);
-      toast({
-        title: "Error",
-        description: `Failed to set custom ${type} sound`,
-        variant: "destructive"
-      });
     }
+  };
+  
+  const item = {
+    hidden: { opacity: 0, y: 20 },
+    show: { opacity: 1, y: 0 }
   };
   
   return (
     <MobileLayout>
-      <div className="mb-6">
-        <h1 className="text-2xl font-bold">Settings</h1>
-        <p className="text-gray-500 text-sm">Customize your experience</p>
-      </div>
+      <motion.div 
+        className="mb-6"
+        initial={{ opacity: 0, y: -20 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.3 }}
+      >
+        <h1 className="text-2xl font-bold bg-gradient-to-r from-focus-400 to-focus-600 bg-clip-text text-transparent">Settings</h1>
+        <p className="text-gray-500 dark:text-gray-400 text-sm">Customize your experience</p>
+      </motion.div>
       
-      <div className="space-y-6">
-        <div className="bg-white dark:bg-gray-800 p-4 rounded-lg shadow-sm border border-gray-100 dark:border-gray-700">
-          <div className="flex justify-between items-center mb-3">
-            <h2 className="text-lg font-medium">Appearance</h2>
-            <Button 
-              variant="outline" 
-              size="icon"
-              onClick={toggleDarkMode}
-              className="rounded-full h-9 w-9"
-            >
-              {isDarkMode ? (
-                <Sun className="h-5 w-5" />
-              ) : (
-                <Moon className="h-5 w-5" />
-              )}
-            </Button>
-          </div>
-          <p className="text-sm text-gray-500 mt-1 mb-3">
-            Toggle between dark and light mode for your comfort
-          </p>
-        </div>
-        
-        <div className="bg-white dark:bg-gray-800 p-4 rounded-lg shadow-sm border border-gray-100 dark:border-gray-700">
-          <h2 className="text-lg font-medium mb-3">Notifications</h2>
-          
-          <div className="space-y-4">
-            <div className="flex items-center justify-between">
-              <Label htmlFor="notifications" className="flex-1">
-                Allow notifications
-              </Label>
-              <Switch 
-                id="notifications" 
-                checked={allowNotifications} 
-                onCheckedChange={async (checked) => {
-                  if (checked) {
-                    const granted = await NotificationService.requestPermissions();
-                    setAllowNotifications(granted);
-                    if (!granted) {
-                      toast({
-                        title: "Permission denied",
-                        description: "Please enable notifications in your browser/device settings",
-                        variant: "destructive"
-                      });
-                    }
-                  } else {
-                    setAllowNotifications(false);
-                  }
-                }} 
-              />
-            </div>
-            
-            <div className="flex items-center justify-between">
-              <Label htmlFor="endTimer" className="flex-1">
-                Timer completion notification
-              </Label>
-              <Switch 
-                id="endTimer" 
-                disabled={!allowNotifications} 
-                defaultChecked 
-              />
-            </div>
-            
-            <div className="flex items-center justify-between">
-              <Label htmlFor="dailyReminder" className="flex-1">
-                Daily task reminder
-              </Label>
-              <Switch 
-                id="dailyReminder" 
-                disabled={!allowNotifications} 
-                defaultChecked 
-              />
-            </div>
-            
-            <div className="pt-2 border-t border-gray-100 dark:border-gray-700 mt-2">
-              <h3 className="text-sm font-medium mb-2">Notification Sounds</h3>
-              
-              <div className="space-y-3">
-                <div className="flex flex-col gap-2">
-                  <Label htmlFor="timerSound" className="text-sm">
-                    Timer completion sound
-                  </Label>
-                  <div className="flex flex-col space-y-2">
-                    <Button 
-                      variant="outline" 
-                      size="sm"
-                      id="timerSound"
-                      onClick={() => handleSetCustomSound('timer')}
-                      className="flex justify-between items-center"
-                    >
-                      <span>
-                        {timerSoundName ? timerSoundName : "Choose custom sound"}
-                      </span>
-                      <Music className="h-4 w-4 ml-2" />
-                    </Button>
-                    
-                    {timerSoundName && (
-                      <div className="flex justify-between">
-                        <Button 
-                          variant="ghost" 
-                          size="sm" 
-                          onClick={() => SoundService.play('timerComplete')}
-                          className="text-xs"
-                        >
-                          Play preview
-                        </Button>
-                      </div>
-                    )}
-                  </div>
-                </div>
-                
-                <div className="flex flex-col gap-2">
-                  <Label htmlFor="taskSound" className="text-sm">
-                    Task notification sound
-                  </Label>
-                  <div className="flex flex-col space-y-2">
-                    <Button 
-                      variant="outline" 
-                      size="sm"
-                      id="taskSound"
-                      onClick={() => handleSetCustomSound('task')}
-                      className="flex justify-between items-center"
-                    >
-                      <span>
-                        {taskSoundName ? taskSoundName : "Choose custom sound"}
-                      </span>
-                      <Music className="h-4 w-4 ml-2" />
-                    </Button>
-                    
-                    {taskSoundName && (
-                      <div className="flex justify-between">
-                        <Button 
-                          variant="ghost" 
-                          size="sm" 
-                          onClick={() => SoundService.play('taskNotification')}
-                          className="text-xs"
-                        >
-                          Play preview
-                        </Button>
-                      </div>
-                    )}
-                  </div>
-                </div>
-                
-                <p className="text-xs text-gray-500 mt-1">
-                  Select audio files from your device to use as custom notification sounds
-                </p>
-              </div>
-            </div>
-          </div>
-        </div>
-        
-        <div className="bg-white dark:bg-gray-800 p-4 rounded-lg shadow-sm border border-gray-100 dark:border-gray-700">
-          <h2 className="text-lg font-medium mb-3">Data Management</h2>
-          
-          <div className="space-y-3">
-            <Button 
-              variant="outline" 
-              className="w-full justify-start"
-              onClick={handleExportData}
-            >
-              <Download size={18} className="mr-2" />
-              Export Your Data
-            </Button>
-            
-            <Dialog>
-              <DialogTrigger asChild>
+      <motion.div 
+        className="space-y-6"
+        variants={container}
+        initial="hidden"
+        animate="show"
+      >
+        <motion.div variants={item}>
+          <Card className="overflow-hidden border border-gray-100 dark:border-gray-800 bg-white/80 dark:bg-gray-800/90 backdrop-blur-sm shadow-md hover:shadow-lg transition-all">
+            <CardHeader className="pb-2">
+              <div className="flex justify-between items-center">
+                <CardTitle className="text-lg font-medium">Appearance</CardTitle>
                 <Button 
                   variant="outline" 
-                  className="w-full justify-start text-red-500 hover:text-red-600 hover:bg-red-50 dark:hover:bg-red-900/20"
+                  size="icon"
+                  onClick={toggleDarkMode}
+                  className="rounded-full h-9 w-9 bg-background shadow-sm hover:shadow"
                 >
-                  <Trash2 size={18} className="mr-2" />
-                  Clear All Data
+                  {isDarkMode ? (
+                    <Sun className="h-5 w-5 text-amber-400" />
+                  ) : (
+                    <Moon className="h-5 w-5 text-focus-400" />
+                  )}
                 </Button>
-              </DialogTrigger>
-              <DialogContent>
-                <DialogHeader>
-                  <DialogTitle>Clear all data?</DialogTitle>
-                  <DialogDescription>
-                    This will permanently delete all your tasks, timer settings, and insights. This action cannot be undone.
-                  </DialogDescription>
-                </DialogHeader>
-                <DialogFooter>
-                  <Button variant="outline" onClick={() => {}}>Cancel</Button>
-                  <Button variant="destructive" onClick={handleClearAllData}>
-                    Yes, delete everything
-                  </Button>
-                </DialogFooter>
-              </DialogContent>
-            </Dialog>
-          </div>
-        </div>
+              </div>
+              <CardDescription className="text-sm text-gray-500 dark:text-gray-400">
+                Toggle between dark and light mode for your comfort
+              </CardDescription>
+            </CardHeader>
+          </Card>
+        </motion.div>
         
-        <div className="bg-white dark:bg-gray-800 p-4 rounded-lg shadow-sm border border-gray-100 dark:border-gray-700">
-          <h2 className="text-lg font-medium mb-3">About</h2>
-          <p className="text-sm text-gray-500">
-            FocusFlow v1.0.0
-            <br /><br />
-            A productivity app designed to help you overcome procrastination and stay focused on your important tasks.
-          </p>
-        </div>
-      </div>
+        <motion.div variants={item}>
+          <Card className="overflow-hidden border border-gray-100 dark:border-gray-800 bg-white/80 dark:bg-gray-800/90 backdrop-blur-sm shadow-md hover:shadow-lg transition-all">
+            <CardHeader>
+              <CardTitle className="text-lg font-medium">Notifications</CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <div className="space-y-4">
+                <div className="flex items-center justify-between p-2 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700/50 transition-colors">
+                  <Label htmlFor="notifications" className="flex-1 cursor-pointer">
+                    Allow notifications
+                  </Label>
+                  <Switch 
+                    id="notifications" 
+                    checked={allowNotifications} 
+                    onCheckedChange={async (checked) => {
+                      if (checked) {
+                        const granted = await NotificationService.requestPermissions();
+                        setAllowNotifications(granted);
+                        if (!granted) {
+                          toast({
+                            title: "Permission denied",
+                            description: "Please enable notifications in your browser/device settings",
+                            variant: "destructive"
+                          });
+                        }
+                      } else {
+                        setAllowNotifications(false);
+                      }
+                    }} 
+                  />
+                </div>
+                
+                <div className="flex items-center justify-between p-2 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700/50 transition-colors">
+                  <Label htmlFor="endTimer" className="flex-1 cursor-pointer">
+                    Timer completion notification
+                  </Label>
+                  <Switch 
+                    id="endTimer" 
+                    disabled={!allowNotifications} 
+                    defaultChecked 
+                  />
+                </div>
+                
+                <div className="flex items-center justify-between p-2 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700/50 transition-colors">
+                  <Label htmlFor="dailyReminder" className="flex-1 cursor-pointer">
+                    Daily task reminder
+                  </Label>
+                  <Switch 
+                    id="dailyReminder" 
+                    disabled={!allowNotifications} 
+                    defaultChecked 
+                  />
+                </div>
+                
+                <div className="pt-4 border-t border-gray-100 dark:border-gray-700 mt-4">
+                  <h3 className="text-sm font-medium mb-4">Notification Sounds</h3>
+                  
+                  <div className="space-y-5">
+                    <CustomSoundSelector type="timer" />
+                    <CustomSoundSelector type="task" />
+                    
+                    <p className="text-xs text-gray-500 dark:text-gray-400 italic">
+                      Select audio files from your device to personalize notifications
+                    </p>
+                  </div>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+        </motion.div>
+        
+        <motion.div variants={item}>
+          <Card className="overflow-hidden border border-gray-100 dark:border-gray-800 bg-white/80 dark:bg-gray-800/90 backdrop-blur-sm shadow-md hover:shadow-lg transition-all">
+            <CardHeader>
+              <CardTitle className="text-lg font-medium">Data Management</CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-3">
+              <Button 
+                variant="outline" 
+                className="w-full justify-start bg-white dark:bg-transparent hover:bg-gray-50 dark:hover:bg-gray-700/50 transition-all"
+                onClick={handleExportData}
+              >
+                <Download size={18} className="mr-2 text-focus-500" />
+                Export Your Data
+              </Button>
+              
+              <Dialog>
+                <DialogTrigger asChild>
+                  <Button 
+                    variant="outline" 
+                    className="w-full justify-start text-red-500 hover:text-red-600 bg-white dark:bg-transparent hover:bg-red-50 dark:hover:bg-red-900/20 transition-all"
+                  >
+                    <Trash2 size={18} className="mr-2" />
+                    Clear All Data
+                  </Button>
+                </DialogTrigger>
+                <DialogContent className="bg-white dark:bg-gray-800/95 backdrop-blur-lg border border-gray-200 dark:border-gray-700">
+                  <DialogHeader>
+                    <DialogTitle>Clear all data?</DialogTitle>
+                    <DialogDescription>
+                      This will permanently delete all your tasks, timer settings, and insights. This action cannot be undone.
+                    </DialogDescription>
+                  </DialogHeader>
+                  <DialogFooter>
+                    <Button variant="outline" onClick={() => {}}>Cancel</Button>
+                    <Button variant="destructive" onClick={handleClearAllData}>
+                      Yes, delete everything
+                    </Button>
+                  </DialogFooter>
+                </DialogContent>
+              </Dialog>
+            </CardContent>
+          </Card>
+        </motion.div>
+        
+        <motion.div variants={item}>
+          <Card className="overflow-hidden border border-gray-100 dark:border-gray-800 bg-white/80 dark:bg-gray-800/90 backdrop-blur-sm shadow-md hover:shadow-lg transition-all">
+            <CardHeader>
+              <CardTitle className="text-lg font-medium">About</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="text-center py-4">
+                <h3 className="text-xl font-semibold bg-gradient-to-r from-focus-300 to-focus-500 bg-clip-text text-transparent">FocusFlow</h3>
+                <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">Version 1.0.0</p>
+                <p className="text-sm text-gray-600 dark:text-gray-300 mt-4 px-4">
+                  A productivity app designed to help you overcome procrastination 
+                  and stay focused on your important tasks.
+                </p>
+              </div>
+            </CardContent>
+          </Card>
+        </motion.div>
+      </motion.div>
     </MobileLayout>
   );
 };

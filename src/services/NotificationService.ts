@@ -269,6 +269,15 @@ class NotificationService {
       const channelIndex = type === 'timer' ? 1 : 0;
       const soundFileName = type === 'timer' ? 'custom-timer-sound.mp3' : 'custom-task-sound.mp3';
       
+      // If soundName is empty, reset to default
+      if (!soundName) {
+        const defaultSound = type === 'timer' ? 'timer-complete.mp3' : 'beep.wav';
+        const defaultChannel = {...this.channels[channelIndex], sound: defaultSound};
+        await LocalNotifications.createChannel(defaultChannel);
+        console.log(`Reset ${type} notification channel to default sound`);
+        return true;
+      }
+      
       // Update the channel with the new sound
       const updatedChannel = {
         ...this.channels[channelIndex],
