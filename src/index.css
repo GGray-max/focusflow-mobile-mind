@@ -5,27 +5,41 @@
 
 @layer base {
   :root {
+    /* Foundations */
     --background: 0 0% 100%;
     --foreground: 222.2 84% 4.9%;
+    
+    /* Components */
     --card: 0 0% 100%;
     --card-foreground: 222.2 84% 4.9%;
     --popover: 0 0% 100%;
     --popover-foreground: 222.2 84% 4.9%;
+    
+    /* Brand colors */
     --primary: 265 89% 66%;
     --primary-foreground: 0 0% 100%;
+    
+    /* Supporting colors */
     --secondary: 210 40% 96.1%;
     --secondary-foreground: 222.2 47.4% 11.2%;
     --muted: 210 40% 96.1%;
     --muted-foreground: 215.4 16.3% 46.9%;
+    
+    /* Accent colors */
     --accent: 265 89% 96%;
     --accent-foreground: 222.2 47.4% 11.2%;
+    
+    /* Functional colors */
     --destructive: 0 84.2% 60.2%;
     --destructive-foreground: 210 40% 98%;
     --border: 214.3 31.8% 91.4%;
     --input: 214.3 31.8% 91.4%;
     --ring: 265 89% 66%;
-    --radius: 0.5rem;
     
+    /* Design tokens */
+    --radius: 0.75rem;
+    
+    /* Sidebar - Light Mode */
     --sidebar-background: 265 89% 66%;
     --sidebar-foreground: 0 0% 100%;
     --sidebar-primary: 0 0% 100%;
@@ -37,34 +51,46 @@
   }
 
   .dark {
+    /* Foundations - Dark Mode */
     --background: 222.2 84% 4.9%;
     --foreground: 210 40% 98%;
+    
+    /* Components - Dark Mode */
     --card: 222.2 84% 4.9%;
     --card-foreground: 210 40% 98%;
     --popover: 222.2 84% 4.9%;
     --popover-foreground: 210 40% 98%;
-    --primary: 265 89% 66%;
+    
+    /* Brand colors - Dark Mode */
+    --primary: 265 89% 70%;
     --primary-foreground: 0 0% 100%;
+    
+    /* Supporting colors - Dark Mode */
     --secondary: 217.2 32.6% 17.5%;
     --secondary-foreground: 210 40% 98%;
     --muted: 217.2 32.6% 17.5%;
     --muted-foreground: 215 20.2% 65.1%;
+    
+    /* Accent colors - Dark Mode */
     --accent: 217.2 32.6% 17.5%;
     --accent-foreground: 210 40% 98%;
+    
+    /* Functional colors - Dark Mode */
     --destructive: 0 62.8% 30.6%;
     --destructive-foreground: 210 40% 98%;
     --border: 217.2 32.6% 17.5%;
     --input: 217.2 32.6% 17.5%;
-    --ring: 265 89% 66%;
+    --ring: 265 89% 70%;
     
+    /* Sidebar - Dark Mode */
     --sidebar-background: 222.2 84% 4.9%;
     --sidebar-foreground: 210 40% 98%;
-    --sidebar-primary: 265 89% 66%;
+    --sidebar-primary: 265 89% 70%;
     --sidebar-primary-foreground: 0 0% 100%;
     --sidebar-accent: 217.2 32.6% 17.5%;
     --sidebar-accent-foreground: 210 40% 98%;
     --sidebar-border: 217.2 32.6% 17.5%;
-    --sidebar-ring: 265 89% 66%;
+    --sidebar-ring: 265 89% 70%;
   }
 }
 
@@ -74,14 +100,14 @@
   }
   
   .focus-gradient {
-    @apply bg-gradient-to-br from-focus-300 to-focus-500 text-white;
+    @apply bg-gradient-to-br from-focus-300 to-focus-500 text-white shadow-sm;
   }
   
   .dark-gradient {
-    @apply bg-gradient-to-br from-gray-800 to-gray-900 text-white;
+    @apply bg-gradient-to-br from-gray-800 to-gray-900 text-white shadow-sm;
   }
   
-  /* Add dark mode specific text utilities */
+  /* Improved text utilities */
   .dark-text-visible {
     @apply text-gray-800 dark:text-gray-200;
   }
@@ -90,9 +116,27 @@
     @apply text-gray-600 dark:text-gray-400;
   }
   
-  /* Improve card styling in dark mode */
+  /* Card styling improvements */
   .dark-card {
-    @apply bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700;
+    @apply bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 shadow-soft rounded-xl;
+  }
+  
+  /* Button and form styling */
+  .btn-modern {
+    @apply rounded-lg px-4 py-2 font-medium transition-all duration-200 hover:translate-y-[-1px] focus:outline-none focus:ring-2 focus:ring-offset-2;
+  }
+  
+  .input-modern {
+    @apply rounded-lg h-11 border-gray-200 focus:border-focus-400 focus:ring focus:ring-focus-200 focus:ring-opacity-50 transition-all duration-200;
+  }
+  
+  /* Animation utilities */
+  .hover-lift {
+    @apply transition-transform duration-200 hover:-translate-y-1;
+  }
+  
+  .hover-scale {
+    @apply transition-transform duration-200 hover:scale-[1.02];
   }
 }
 
@@ -110,15 +154,17 @@
   color: #9ca3af; /* This is the equivalent of text-gray-400 */
 }
 
-/* Use a direct approach instead of @apply for dark mode button improvements */
+/* Button improvements */
 .dark button.bg-focus-400 {
   background-color: hsl(var(--primary));
+  @apply shadow-sm;
 }
 .dark button.bg-focus-400:hover {
   background-color: #6E59A5; /* focus-600 equivalent */
+  @apply shadow-md;
 }
 
-/* Improve contrast for inputs in dark mode */
+/* Form control improvements */
 .dark input, 
 .dark textarea, 
 .dark select {
@@ -131,3 +177,11 @@
 .dark textarea::placeholder {
   color: #6b7280; /* text-gray-500 equivalent */
 }
+
+/* Better default styling */
+html {
+  @apply antialiased;
+}
+
+/* Add inter font */
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap');

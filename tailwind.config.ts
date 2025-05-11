@@ -64,6 +64,7 @@ export default {
 					ring: 'hsl(var(--sidebar-ring))'
 				},
                 focus: {
+                    50: '#F5F1FF',
                     100: '#E5DEFF',
                     200: '#D6BCFA',
                     300: '#9b87f5',
@@ -99,14 +100,44 @@ export default {
 				},
                 'pulse-gentle': {
                     '0%, 100%': { opacity: '1' },
-                    '50%': { opacity: '0.8' }
+                    '50%': { opacity: '0.75' }
+                },
+                'slide-in-up': {
+                    '0%': { transform: 'translateY(20px)', opacity: '0' },
+                    '100%': { transform: 'translateY(0)', opacity: '1' }
+                },
+                'fade-in': {
+                    '0%': { opacity: '0' },
+                    '100%': { opacity: '1' }
+                },
+                'bounce-gentle': {
+                    '0%, 100%': { transform: 'translateY(0)' },
+                    '50%': { transform: 'translateY(-5px)' }
+                },
+                'scale-in': {
+                    '0%': { transform: 'scale(0.9)', opacity: '0' },
+                    '100%': { transform: 'scale(1)', opacity: '1' }
                 }
 			},
 			animation: {
 				'accordion-down': 'accordion-down 0.2s ease-out',
 				'accordion-up': 'accordion-up 0.2s ease-out',
-                'pulse-gentle': 'pulse-gentle 3s ease-in-out infinite'
-			}
+                'pulse-gentle': 'pulse-gentle 3s ease-in-out infinite',
+                'slide-in-up': 'slide-in-up 0.4s ease-out',
+                'fade-in': 'fade-in 0.3s ease-out',
+                'bounce-gentle': 'bounce-gentle 2s ease-in-out infinite',
+                'scale-in': 'scale-in 0.2s ease-out'
+			},
+            fontFamily: {
+                sans: ['Inter', 'system-ui', 'sans-serif'],
+                display: ['DM Sans', 'system-ui', 'sans-serif'],
+                mono: ['JetBrains Mono', 'monospace']
+            },
+            boxShadow: {
+                'soft': '0 4px 20px -2px rgba(0,0,0,0.05)',
+                'soft-md': '0 4px 30px -10px rgba(0,0,0,0.1)',
+                'focus-ring': '0 0 0 3px rgba(139, 92, 246, 0.35)'
+            }
 		}
 	},
 	plugins: [require("tailwindcss-animate")],

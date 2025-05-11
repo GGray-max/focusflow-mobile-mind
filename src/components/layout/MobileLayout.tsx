@@ -23,38 +23,52 @@ const MobileLayout: React.FC<MobileLayoutProps> = ({ children }) => {
 
   return (
     <div className="max-w-md mx-auto min-h-screen flex flex-col bg-background">
-      <main className="flex-1 p-4 pb-20 overflow-auto">
+      <main className="flex-1 px-4 sm:px-6 pb-20 overflow-auto">
         <AnimatePresence mode="wait">
           <motion.div
             key={location.pathname}
             initial={{ opacity: 0, y: 10 }}
             animate={{ opacity: 1, y: 0 }}
             exit={{ opacity: 0, y: -10 }}
-            transition={{ duration: 0.2 }}
-            className="h-full"
+            transition={{ duration: 0.3, ease: "easeInOut" }}
+            className="h-full pt-6"
           >
             {children}
           </motion.div>
         </AnimatePresence>
       </main>
       
-      <nav className="fixed bottom-0 left-0 right-0 bg-white dark:bg-gray-900 border-t border-gray-200 dark:border-gray-800 px-4 py-2 z-10">
+      <nav className="fixed bottom-0 left-0 right-0 bg-white dark:bg-gray-900 border-t border-gray-200 dark:border-gray-800 px-4 py-2 z-10 shadow-[0_-1px_3px_rgba(0,0,0,0.05)]">
         <div className="max-w-md mx-auto">
           <div className="flex justify-between">
-            {navItems.map(({ path, Icon, label }) => (
-              <button
-                key={path}
-                className={`flex flex-col items-center justify-center flex-grow py-1 ${
-                  location.pathname === path 
-                    ? 'text-focus-400'
-                    : 'text-gray-500 hover:text-gray-800 dark:hover:text-gray-300'
-                }`}
-                onClick={() => navigate(path)}
-              >
-                <Icon size={20} className={location.pathname === path ? 'animate-pulse' : ''} />
-                <span className="text-[10px] mt-1">{label}</span>
-              </button>
-            ))}
+            {navItems.map(({ path, Icon, label }) => {
+              const isActive = location.pathname === path;
+              return (
+                <button
+                  key={path}
+                  className={`flex flex-col items-center justify-center flex-grow py-2 relative ${
+                    isActive 
+                      ? 'text-focus-400'
+                      : 'text-gray-500 hover:text-gray-800 dark:hover:text-gray-300'
+                  }`}
+                  onClick={() => navigate(path)}
+                >
+                  {isActive && (
+                    <motion.div 
+                      layoutId="navigation-pill"
+                      className="absolute -top-1 w-1/2 h-1 bg-focus-400 rounded-full"
+                      initial={false}
+                      transition={{ type: "spring", stiffness: 400, damping: 30 }}
+                    />
+                  )}
+                  <Icon 
+                    size={22} 
+                    className={isActive ? 'animate-pulse-gentle' : 'transition-transform group-hover:scale-105'} 
+                  />
+                  <span className="text-xs mt-1 font-medium">{label}</span>
+                </button>
+              );
+            })}
           </div>
         </div>
       </nav>

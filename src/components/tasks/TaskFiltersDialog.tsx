@@ -41,26 +41,26 @@ const TaskFiltersDialog: React.FC<TaskFiltersDialogProps> = ({ isOpen, onClose }
 
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
-      <DialogContent className="sm:max-w-md">
+      <DialogContent className="sm:max-w-md rounded-xl border-0 shadow-lg">
         <DialogHeader>
-          <DialogTitle>Filter Tasks</DialogTitle>
+          <DialogTitle className="text-xl font-bold text-focus-500">Filter Tasks</DialogTitle>
         </DialogHeader>
-        <div className="space-y-4 py-4">
+        <div className="space-y-5 py-4">
           <motion.div 
             className="space-y-2"
             initial={{ opacity: 0, y: 10 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.2 }}
           >
-            <Label htmlFor="filterCategory">Category</Label>
+            <Label htmlFor="filterCategory" className="font-medium text-sm">Category</Label>
             <Select 
               value={filterCategory || "all"} 
               onValueChange={(value) => setFilterCategory(value === "all" ? null : value)}
             >
-              <SelectTrigger id="filterCategory" className="border-focus-200 focus:border-focus-400">
+              <SelectTrigger id="filterCategory" className="border-focus-200 focus:border-focus-400 rounded-lg h-11 transition-all">
                 <SelectValue placeholder="All Categories" />
               </SelectTrigger>
-              <SelectContent>
+              <SelectContent className="rounded-lg">
                 <SelectItem value="all">All Categories</SelectItem>
                 {categories.map((category) => (
                   <SelectItem key={category} value={category}>
@@ -77,15 +77,15 @@ const TaskFiltersDialog: React.FC<TaskFiltersDialogProps> = ({ isOpen, onClose }
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.2, delay: 0.05 }}
           >
-            <Label htmlFor="filterPriority">Priority</Label>
+            <Label htmlFor="filterPriority" className="font-medium text-sm">Priority</Label>
             <Select 
               value={filterPriority || "all"} 
               onValueChange={(value) => setFilterPriority(value === "all" ? null : value)}
             >
-              <SelectTrigger id="filterPriority" className="border-focus-200 focus:border-focus-400">
+              <SelectTrigger id="filterPriority" className="border-focus-200 focus:border-focus-400 rounded-lg h-11 transition-all">
                 <SelectValue placeholder="All Priorities" />
               </SelectTrigger>
-              <SelectContent>
+              <SelectContent className="rounded-lg">
                 <SelectItem value="all">All Priorities</SelectItem>
                 <SelectItem value="low">Low</SelectItem>
                 <SelectItem value="medium">Medium</SelectItem>
@@ -100,26 +100,27 @@ const TaskFiltersDialog: React.FC<TaskFiltersDialogProps> = ({ isOpen, onClose }
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.2, delay: 0.1 }}
           >
-            <Label>Due Date</Label>
+            <Label className="font-medium text-sm">Due Date</Label>
             <Popover>
               <PopoverTrigger asChild>
                 <Button
                   variant="outline"
                   className={cn(
-                    "w-full justify-start text-left font-normal border-focus-200 focus:border-focus-400",
+                    "w-full justify-start text-left font-normal border-focus-200 focus:border-focus-400 rounded-lg h-11",
                     !selectedDate && "text-muted-foreground"
                   )}
                 >
-                  <CalendarIcon className="mr-2 h-4 w-4" />
+                  <CalendarIcon className="mr-2 h-4 w-4 opacity-70" />
                   {selectedDate ? format(selectedDate, "PPP") : "Any Date"}
                 </Button>
               </PopoverTrigger>
-              <PopoverContent className="w-auto p-0" align="start">
-                <div className="p-2 flex justify-between">
+              <PopoverContent className="w-auto p-0 rounded-lg" align="start">
+                <div className="p-3 flex justify-between border-b">
                   <Button 
                     variant="ghost" 
                     size="sm" 
                     onClick={() => setFilterDueDate(null)}
+                    className="text-sm hover:text-focus-500 transition-colors"
                   >
                     Clear
                   </Button>
@@ -129,26 +130,26 @@ const TaskFiltersDialog: React.FC<TaskFiltersDialogProps> = ({ isOpen, onClose }
                   selected={selectedDate}
                   onSelect={(date) => setFilterDueDate(date ? date.toISOString() : null)}
                   initialFocus
-                  className="pointer-events-auto"
+                  className="rounded-lg"
                 />
               </PopoverContent>
             </Popover>
           </motion.div>
         </div>
 
-        <DialogFooter className="gap-2">
+        <DialogFooter className="gap-2 sm:gap-0">
           <Button
             type="button"
             variant="outline"
             onClick={handleReset}
-            className="border-focus-200 hover:border-focus-400"
+            className="w-full sm:w-auto border-focus-200 hover:border-focus-400 hover:bg-focus-50 rounded-lg transition-all"
           >
             Reset Filters
           </Button>
           <Button
             type="button"
             onClick={handleApply}
-            className="bg-focus-400 hover:bg-focus-500"
+            className="w-full sm:w-auto bg-focus-400 hover:bg-focus-500 rounded-lg transition-all"
           >
             Apply Filters
           </Button>
