@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import MobileLayout from '@/components/layout/MobileLayout';
 import { Button } from '@/components/ui/button';
@@ -226,31 +225,55 @@ const TasksPage: React.FC = () => {
           </Button>
         </div>
         
-        {/* View mode toggle */}
+        {/* View mode toggle - REDESIGNED */}
         <div className="flex space-x-2 justify-center">
           <Button 
             variant={viewMode === 'list' ? 'default' : 'outline'}
             size="sm"
             onClick={() => setViewMode('list')}
-            className="rounded-full"
+            className={cn(
+              "rounded-full transition-all duration-300 transform",
+              viewMode === 'list' ? "bg-focus-400 shadow-md hover:shadow-lg hover:bg-focus-500" : "hover:scale-105"
+            )}
           >
-            List View
+            <motion.span
+              initial={{ opacity: 0.8 }}
+              animate={{ opacity: 1 }}
+              transition={{ duration: 0.3 }}
+            >
+              List View
+            </motion.span>
           </Button>
           <Button 
             variant={viewMode === 'calendar' ? 'default' : 'outline'}
             size="sm"
             onClick={() => setViewMode('calendar')}
-            className="rounded-full"
+            className={cn(
+              "rounded-full transition-all duration-300 transform",
+              viewMode === 'calendar' ? "bg-focus-400 shadow-md hover:shadow-lg hover:bg-focus-500" : "hover:scale-105"
+            )}
           >
-            Calendar View
+            <motion.span
+              initial={{ opacity: 0.8 }}
+              animate={{ opacity: 1 }}
+              transition={{ duration: 0.3 }}
+            >
+              Calendar View
+            </motion.span>
           </Button>
           <Button 
             variant="outline"
             size="sm"
             onClick={() => setShowFreeTimeAnalysis(true)}
-            className="rounded-full"
+            className="rounded-full transition-all duration-300 transform hover:bg-focus-100 hover:text-focus-400 hover:scale-105 hover:border-focus-300"
           >
-            Free Time
+            <motion.span
+              initial={{ opacity: 0.8 }}
+              animate={{ opacity: 1 }}
+              transition={{ duration: 0.3 }}
+            >
+              Free Time
+            </motion.span>
           </Button>
         </div>
         
