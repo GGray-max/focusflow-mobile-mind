@@ -37,8 +37,8 @@ const SpeechRecognition: React.FC<SpeechRecognitionProps> = ({ isActive, onSpeec
   const startSpeechRecognition = () => {
     if ('webkitSpeechRecognition' in window || 'SpeechRecognition' in window) {
       // Create recognition object
-      const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
-      const recognitionInstance = new SpeechRecognition();
+      const SpeechRecognitionAPI = window.SpeechRecognition || window.webkitSpeechRecognition;
+      const recognitionInstance = new SpeechRecognitionAPI();
       
       recognitionInstance.continuous = false;
       recognitionInstance.interimResults = true;
@@ -124,13 +124,13 @@ const SpeechRecognition: React.FC<SpeechRecognitionProps> = ({ isActive, onSpeec
             />
           </motion.div>
           
-          <h3 className="text-lg font-medium mt-2">
+          <h3 className="text-lg font-medium mt-2 dark:text-white">
             {isListening ? "Listening..." : "Processing..."}
           </h3>
           
           {transcript && (
             <div className="mt-4 px-4 py-2 bg-gray-50 dark:bg-gray-800 rounded-md w-full">
-              <p className="text-sm">"{transcript}"</p>
+              <p className="text-sm dark:text-white">"{transcript}"</p>
             </div>
           )}
         </div>
