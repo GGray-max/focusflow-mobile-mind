@@ -16,6 +16,7 @@ import { Switch } from '@/components/ui/switch';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import NotificationService from '@/services/NotificationService';
 import { toast } from '@/components/ui/use-toast';
+import { motion } from 'framer-motion';
 
 interface AddTaskDialogProps {
   isOpen: boolean;
@@ -34,8 +35,15 @@ const AddTaskDialog: React.FC<AddTaskDialogProps> = ({ isOpen, onClose }) => {
   const [hasNotificationPermission, setHasNotificationPermission] = useState(false);
   const [recurrence, setRecurrence] = useState<'none' | 'daily' | 'weekly' | 'monthly'>('none');
   const [isMonthlyTask, setIsMonthlyTask] = useState(false);
-
-  const { addTask } = useTasks();
+  const [category, setCategory] = useState<string>('Personal');
+  const [newCategory, setNewCategory] = useState('');
+  const [isAddingCategory, setIsAddingCategory] = useState(false);
+  const [startTime, setStartTime] = useState('');
+  const [endTime, setEndTime] = useState('');
+  const [duration, setDuration] = useState<number | undefined>(30);
+  
+  const { addTask, state, addCategory } = useTasks();
+  const { categories } = state;
 
   useEffect(() => {
     // Check notification permission on load
@@ -45,7 +53,14 @@ const AddTaskDialog: React.FC<AddTaskDialogProps> = ({ isOpen, onClose }) => {
     };
     
     checkPermission();
-  }, []);
+    
+    // Check for voice input from speech recognition
+    const voiceTaskTitle = localStorage.getItem('voiceTaskTitle');
+    if (voiceTaskTitle && isOpen) {
+      setTitle(voiceTaskTitle);
+      localStorage.removeItem('voiceTaskTitle');
+    }
+  }, [isOpen]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -64,15 +79,33 @@ const AddTaskDialog: React.FC<AddTaskDialogProps> = ({ isOpen, onClose }) => {
     
     const taskId = Date.now().toString();
     
+    // Calculate duration if start and end times are provided
+    let calculatedDuration = duration;
+    if (startTime && endTime) {
+      const start = startTime.split(':').map(Number);
+      const end = endTime.split(':').map(Number);
+      
+      const startMinutes = start[0] * 60 + start[1];
+      const endMinutes = end[0] * 60 + end[1];
+      
+      if (endMinutes > startMinutes) {
+        calculatedDuration = endMinutes - startMinutes;
+      }
+    }
+    
     const newTask: Omit<Task, 'id' | 'createdAt'> = {
       title: title.trim(),
       description: description.trim(),
       completed: false,
       dueDate: dueDate ? dueDate.toISOString() : undefined,
       dueTime: dueTime || undefined,
+      startTime: startTime || undefined,
+      endTime: endTime || undefined,
+      duration: calculatedDuration,
       notifyAt,
       hasNotification: !!hasValidNotification,
       priority,
+      category,
       tags: [],
       subtasks: subtasks.map((text, index) => ({
         id: `new-subtask-${index}`,
@@ -80,9 +113,9 @@ const AddTaskDialog: React.FC<AddTaskDialogProps> = ({ isOpen, onClose }) => {
         completed: false,
       })),
       isPriority: false,
-      recurrence: recurrence, // Add recurrence type
-      isMonthlyTask: isMonthlyTask, // Add monthly task flag
-      isActive: recurrence !== 'none' ? true : undefined, // Recurring tasks are active by default
+      recurrence: recurrence,
+      isMonthlyTask: isMonthlyTask,
+      isActive: recurrence !== 'none' ? true : undefined,
     };
     
     addTask(newTask);
@@ -105,19 +138,12 @@ const AddTaskDialog: React.FC<AddTaskDialogProps> = ({ isOpen, onClose }) => {
       }
       
       if (hasNotificationPermission) {
-        const scheduled = await NotificationService.scheduleTaskNotification(
+        NotificationService.scheduleTaskNotification(
           taskId,
           `Task Due: ${title}`,
           description || 'Time to complete your task!',
           notificationTime
         );
-        
-        if (scheduled) {
-          toast({
-            title: "Task reminder set",
-            description: `You will be notified at ${format(notificationTime, 'PPpp')}`,
-          });
-        }
       }
     }
     
@@ -137,6 +163,28 @@ const AddTaskDialog: React.FC<AddTaskDialogProps> = ({ isOpen, onClose }) => {
     setSubtasks(newSubtasks);
   };
 
+  const handleAddNewCategory = () => {
+    if (newCategory.trim()) {
+      addCategory(newCategory.trim());
+      setCategory(newCategory.trim());
+      setNewCategory('');
+      setIsAddingCategory(false);
+    }
+  };
+
+  const handleSelectDuration = (mins: number) => {
+    setDuration(mins);
+    if (startTime) {
+      // Calculate end time based on start time and duration
+      const [hours, minutes] = startTime.split(':').map(Number);
+      const totalMinutes = hours * 60 + minutes + mins;
+      const newHours = Math.floor(totalMinutes / 60) % 24;
+      const newMinutes = totalMinutes % 60;
+      
+      setEndTime(`${newHours.toString().padStart(2, '0')}:${newMinutes.toString().padStart(2, '0')}`);
+    }
+  };
+
   const handleClose = () => {
     setTitle('');
     setDescription('');
@@ -148,6 +196,12 @@ const AddTaskDialog: React.FC<AddTaskDialogProps> = ({ isOpen, onClose }) => {
     setEnableNotification(false);
     setRecurrence('none');
     setIsMonthlyTask(false);
+    setCategory('Personal');
+    setNewCategory('');
+    setIsAddingCategory(false);
+    setStartTime('');
+    setEndTime('');
+    setDuration(30);
     onClose();
   };
 
@@ -158,7 +212,12 @@ const AddTaskDialog: React.FC<AddTaskDialogProps> = ({ isOpen, onClose }) => {
           <DialogTitle>Add New Task</DialogTitle>
         </DialogHeader>
         <form onSubmit={handleSubmit} className="space-y-4 mt-2">
-          <div className="space-y-2">
+          <motion.div 
+            className="space-y-2"
+            initial={{ opacity: 0, y: 10 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.2 }}
+          >
             <Label htmlFor="title">Task Title</Label>
             <Input
               id="title"
@@ -166,10 +225,16 @@ const AddTaskDialog: React.FC<AddTaskDialogProps> = ({ isOpen, onClose }) => {
               onChange={(e) => setTitle(e.target.value)}
               placeholder="Enter task title"
               required
+              className="border-focus-200 focus:border-focus-400"
             />
-          </div>
+          </motion.div>
           
-          <div className="space-y-2">
+          <motion.div 
+            className="space-y-2"
+            initial={{ opacity: 0, y: 10 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.2, delay: 0.05 }}
+          >
             <Label htmlFor="description">Description (Optional)</Label>
             <Textarea
               id="description"
@@ -177,27 +242,93 @@ const AddTaskDialog: React.FC<AddTaskDialogProps> = ({ isOpen, onClose }) => {
               onChange={(e) => setDescription(e.target.value)}
               placeholder="Enter task details"
               rows={3}
+              className="border-focus-200 focus:border-focus-400"
             />
-          </div>
+          </motion.div>
+          
+          <motion.div 
+            className="space-y-2"
+            initial={{ opacity: 0, y: 10 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.2, delay: 0.1 }}
+          >
+            <Label htmlFor="category">Category</Label>
+            {!isAddingCategory ? (
+              <div className="flex space-x-2">
+                <Select value={category} onValueChange={setCategory}>
+                  <SelectTrigger className="w-full border-focus-200 focus:border-focus-400">
+                    <SelectValue placeholder="Select category" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {categories.map((cat) => (
+                      <SelectItem key={cat} value={cat}>
+                        {cat}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+                <Button 
+                  type="button" 
+                  variant="outline" 
+                  onClick={() => setIsAddingCategory(true)}
+                >
+                  New
+                </Button>
+              </div>
+            ) : (
+              <div className="flex space-x-2">
+                <Input
+                  value={newCategory}
+                  onChange={(e) => setNewCategory(e.target.value)}
+                  placeholder="New category name"
+                  className="flex-1 border-focus-200 focus:border-focus-400"
+                />
+                <Button 
+                  type="button" 
+                  variant="outline" 
+                  onClick={handleAddNewCategory}
+                >
+                  Add
+                </Button>
+                <Button 
+                  type="button" 
+                  variant="ghost" 
+                  onClick={() => setIsAddingCategory(false)}
+                >
+                  Cancel
+                </Button>
+              </div>
+            )}
+          </motion.div>
           
           {/* Task Type - Monthly or Regular */}
-          <div className="flex items-center space-x-2">
+          <motion.div 
+            className="flex items-center space-x-2"
+            initial={{ opacity: 0, y: 10 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.2, delay: 0.15 }}
+          >
             <Switch
               id="monthlyTask"
               checked={isMonthlyTask}
               onCheckedChange={setIsMonthlyTask}
             />
             <Label htmlFor="monthlyTask">This is a monthly task</Label>
-          </div>
+          </motion.div>
           
           {/* Recurrence Options */}
-          <div className="space-y-2">
+          <motion.div 
+            className="space-y-2"
+            initial={{ opacity: 0, y: 10 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.2, delay: 0.2 }}
+          >
             <Label htmlFor="recurrence">Repeat Task</Label>
             <Select 
               value={recurrence} 
               onValueChange={(value) => setRecurrence(value as 'none' | 'daily' | 'weekly' | 'monthly')}
             >
-              <SelectTrigger className="w-full" id="recurrence">
+              <SelectTrigger className="w-full border-focus-200 focus:border-focus-400" id="recurrence">
                 <SelectValue placeholder="Select recurrence" />
               </SelectTrigger>
               <SelectContent>
@@ -215,9 +346,14 @@ const AddTaskDialog: React.FC<AddTaskDialogProps> = ({ isOpen, onClose }) => {
                 </span>
               </div>
             )}
-          </div>
+          </motion.div>
           
-          <div className="space-y-4">
+          <motion.div 
+            className="space-y-4"
+            initial={{ opacity: 0, y: 10 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.2, delay: 0.25 }}
+          >
             <div className="space-y-2">
               <Label>Due Date (Optional)</Label>
               <Popover>
@@ -225,7 +361,7 @@ const AddTaskDialog: React.FC<AddTaskDialogProps> = ({ isOpen, onClose }) => {
                   <Button
                     variant="outline"
                     className={cn(
-                      "w-full justify-start text-left font-normal",
+                      "w-full justify-start text-left font-normal border-focus-200 focus:border-focus-400",
                       !dueDate && "text-muted-foreground"
                     )}
                   >
@@ -239,6 +375,7 @@ const AddTaskDialog: React.FC<AddTaskDialogProps> = ({ isOpen, onClose }) => {
                     selected={dueDate}
                     onSelect={setDueDate}
                     initialFocus
+                    className="pointer-events-auto"
                   />
                 </PopoverContent>
               </Popover>
@@ -252,9 +389,104 @@ const AddTaskDialog: React.FC<AddTaskDialogProps> = ({ isOpen, onClose }) => {
                   type="time"
                   value={dueTime}
                   onChange={(e) => setDueTime(e.target.value)}
-                  className="flex-1"
+                  className="flex-1 border-focus-200 focus:border-focus-400"
                 />
                 <Clock className="h-4 w-4 text-gray-400" />
+              </div>
+            </div>
+            
+            <div className="grid grid-cols-2 gap-4">
+              <div className="space-y-2">
+                <Label htmlFor="startTime">Start Time (Optional)</Label>
+                <Input
+                  id="startTime"
+                  type="time"
+                  value={startTime}
+                  onChange={(e) => {
+                    setStartTime(e.target.value);
+                    if (duration && e.target.value) {
+                      // Update end time based on duration
+                      const [hours, minutes] = e.target.value.split(':').map(Number);
+                      const totalMinutes = hours * 60 + minutes + (duration || 0);
+                      const newHours = Math.floor(totalMinutes / 60) % 24;
+                      const newMinutes = totalMinutes % 60;
+                      
+                      setEndTime(`${newHours.toString().padStart(2, '0')}:${newMinutes.toString().padStart(2, '0')}`);
+                    }
+                  }}
+                  className="border-focus-200 focus:border-focus-400"
+                />
+              </div>
+              
+              <div className="space-y-2">
+                <Label htmlFor="endTime">End Time (Optional)</Label>
+                <Input
+                  id="endTime"
+                  type="time"
+                  value={endTime}
+                  onChange={(e) => {
+                    setEndTime(e.target.value);
+                    if (startTime && e.target.value) {
+                      // Update duration based on start and end times
+                      const start = startTime.split(':').map(Number);
+                      const end = e.target.value.split(':').map(Number);
+                      
+                      const startMinutes = start[0] * 60 + start[1];
+                      const endMinutes = end[0] * 60 + end[1];
+                      
+                      if (endMinutes > startMinutes) {
+                        setDuration(endMinutes - startMinutes);
+                      }
+                    }
+                  }}
+                  className="border-focus-200 focus:border-focus-400"
+                />
+              </div>
+            </div>
+            
+            <div className="space-y-2">
+              <Label>Duration</Label>
+              <div className="grid grid-cols-4 gap-2">
+                <Button 
+                  type="button" 
+                  variant={duration === 30 ? "default" : "outline"}
+                  onClick={() => handleSelectDuration(30)}
+                  className="w-full"
+                >
+                  30 min
+                </Button>
+                <Button 
+                  type="button"
+                  variant={duration === 60 ? "default" : "outline"}
+                  onClick={() => handleSelectDuration(60)}
+                  className="w-full"
+                >
+                  60 min
+                </Button>
+                <Button 
+                  type="button"
+                  variant={duration === 90 ? "default" : "outline"}
+                  onClick={() => handleSelectDuration(90)}
+                  className="w-full"
+                >
+                  90 min
+                </Button>
+                <Button 
+                  type="button"
+                  variant={duration !== 30 && duration !== 60 && duration !== 90 ? "default" : "outline"}
+                  onClick={() => {
+                    const customDuration = prompt("Enter custom duration in minutes:", duration?.toString() || "30");
+                    if (customDuration) {
+                      const mins = parseInt(customDuration);
+                      if (!isNaN(mins) && mins > 0) {
+                        handleSelectDuration(mins);
+                      }
+                    }
+                  }}
+                  className="w-full"
+                >
+                  Custom
+                </Button>
               </div>
             </div>
             
@@ -292,9 +524,14 @@ const AddTaskDialog: React.FC<AddTaskDialogProps> = ({ isOpen, onClose }) => {
                 Please set both date and time to enable notifications
               </p>
             )}
-          </div>
+          </motion.div>
           
-          <div className="space-y-2">
+          <motion.div 
+            className="space-y-2"
+            initial={{ opacity: 0, y: 10 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.2, delay: 0.3 }}
+          >
             <Label>Priority</Label>
             <RadioGroup 
               defaultValue="medium" 
@@ -315,9 +552,14 @@ const AddTaskDialog: React.FC<AddTaskDialogProps> = ({ isOpen, onClose }) => {
                 <Label htmlFor="high" className="cursor-pointer">High</Label>
               </div>
             </RadioGroup>
-          </div>
+          </motion.div>
           
-          <div className="space-y-2">
+          <motion.div 
+            className="space-y-2"
+            initial={{ opacity: 0, y: 10 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.2, delay: 0.35 }}
+          >
             <Label htmlFor="subtasks">Add Subtasks</Label>
             <div className="flex items-center space-x-2">
               <Input
@@ -325,7 +567,7 @@ const AddTaskDialog: React.FC<AddTaskDialogProps> = ({ isOpen, onClose }) => {
                 value={newSubtask}
                 onChange={(e) => setNewSubtask(e.target.value)}
                 placeholder="Enter subtask"
-                className="flex-1"
+                className="flex-1 border-focus-200 focus:border-focus-400"
               />
               <Button 
                 type="button" 
@@ -339,7 +581,13 @@ const AddTaskDialog: React.FC<AddTaskDialogProps> = ({ isOpen, onClose }) => {
             {subtasks.length > 0 && (
               <div className="mt-3 space-y-2">
                 {subtasks.map((task, index) => (
-                  <div key={index} className="flex justify-between items-center bg-gray-50 dark:bg-gray-800 p-2 rounded-md">
+                  <motion.div 
+                    key={index} 
+                    className="flex justify-between items-center bg-gray-50 dark:bg-gray-800 p-2 rounded-md"
+                    initial={{ opacity: 0, x: -10 }}
+                    animate={{ opacity: 1, x: 0 }}
+                    transition={{ duration: 0.2 }}
+                  >
                     <span className="text-sm gray-text-override">{task}</span>
                     <Button 
                       type="button"
@@ -349,17 +597,17 @@ const AddTaskDialog: React.FC<AddTaskDialogProps> = ({ isOpen, onClose }) => {
                     >
                       Remove
                     </Button>
-                  </div>
+                  </motion.div>
                 ))}
               </div>
             )}
-          </div>
+          </motion.div>
           
           <DialogFooter>
-            <Button type="button" variant="outline" onClick={handleClose}>
+            <Button type="button" variant="outline" onClick={handleClose} className="border-focus-200 hover:border-focus-400">
               Cancel
             </Button>
-            <Button type="submit">Add Task</Button>
+            <Button type="submit" className="bg-focus-400 hover:bg-focus-500">Add Task</Button>
           </DialogFooter>
         </form>
       </DialogContent>

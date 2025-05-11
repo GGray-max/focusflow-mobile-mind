@@ -21,6 +21,10 @@ export interface Task {
   isMonthlyTask?: boolean; // New: flag for monthly task
   isActive?: boolean; // New: track if recurring task is active
   lastCompleted?: string; // New: track when recurring task was last completed
+  category?: string; // New: task category
+  startTime?: string; // New: start time for task
+  endTime?: string; // New: end time for task
+  duration?: number; // New: duration in minutes
 }
 
 export interface SubTask {
@@ -33,6 +37,15 @@ interface TaskState {
   tasks: Task[];
   loading: boolean;
   error: string | null;
+  categories: string[]; // New: available categories
+  searchTerm: string; // New: search term for filtering
+  filterCategory: string | null; // New: filter by category
+  filterPriority: string | null; // New: filter by priority
+  filterDueDate: string | null; // New: filter by due date
+  sortBy: 'priority' | 'dueDate' | 'category' | 'createdAt'; // New: sort option
+  sortDirection: 'asc' | 'desc'; // New: sort direction
+  currentPage: number; // New: current page for pagination
+  tasksPerPage: number; // New: tasks per page
 }
 
 type TaskAction =
@@ -46,12 +59,29 @@ type TaskAction =
   | { type: 'ADD_SUBTASK'; payload: { taskId: string; subtask: SubTask } }
   | { type: 'DELETE_SUBTASK'; payload: { taskId: string; subtaskId: string } }
   | { type: 'TOGGLE_PRIORITY'; payload: string }
-  | { type: 'TOGGLE_RECURRENCE_STATE'; payload: string }; // New: toggle recurring task active state
+  | { type: 'TOGGLE_RECURRENCE_STATE'; payload: string }
+  | { type: 'SET_SEARCH_TERM'; payload: string }
+  | { type: 'SET_FILTER_CATEGORY'; payload: string | null }
+  | { type: 'SET_FILTER_PRIORITY'; payload: string | null }
+  | { type: 'SET_FILTER_DUE_DATE'; payload: string | null }
+  | { type: 'SET_SORT'; payload: { sortBy: 'priority' | 'dueDate' | 'category' | 'createdAt'; direction: 'asc' | 'desc' } }
+  | { type: 'SET_PAGE'; payload: number }
+  | { type: 'ADD_CATEGORY'; payload: string }
+  | { type: 'UPDATE_CATEGORIES'; payload: string[] };
 
 const initialState: TaskState = {
   tasks: [],
   loading: true,
   error: null,
+  categories: ['Personal', 'Work', 'Shopping', 'Health', 'Education'],
+  searchTerm: '',
+  filterCategory: null,
+  filterPriority: null,
+  filterDueDate: null,
+  sortBy: 'priority',
+  sortDirection: 'desc',
+  currentPage: 1,
+  tasksPerPage: 10
 };
 
 const taskReducer = (state: TaskState, action: TaskAction): TaskState => {
@@ -171,6 +201,54 @@ const taskReducer = (state: TaskState, action: TaskAction): TaskState => {
             : task
         ),
       };
+    case 'SET_SEARCH_TERM':
+      return {
+        ...state,
+        searchTerm: action.payload,
+        currentPage: 1 // Reset to first page when searching
+      };
+    case 'SET_FILTER_CATEGORY':
+      return {
+        ...state,
+        filterCategory: action.payload,
+        currentPage: 1 // Reset to first page when filtering
+      };
+    case 'SET_FILTER_PRIORITY':
+      return {
+        ...state,
+        filterPriority: action.payload,
+        currentPage: 1 // Reset to first page when filtering
+      };
+    case 'SET_FILTER_DUE_DATE':
+      return {
+        ...state,
+        filterDueDate: action.payload,
+        currentPage: 1 // Reset to first page when filtering
+      };
+    case 'SET_SORT':
+      return {
+        ...state,
+        sortBy: action.payload.sortBy,
+        sortDirection: action.payload.direction
+      };
+    case 'SET_PAGE':
+      return {
+        ...state,
+        currentPage: action.payload
+      };
+    case 'ADD_CATEGORY':
+      if (state.categories.includes(action.payload)) {
+        return state;
+      }
+      return {
+        ...state,
+        categories: [...state.categories, action.payload]
+      };
+    case 'UPDATE_CATEGORIES':
+      return {
+        ...state,
+        categories: action.payload
+      };
     default:
       return state;
   }
@@ -186,7 +264,17 @@ type TaskContextType = {
   addSubtask: (taskId: string, subtaskTitle: string) => void;
   deleteSubtask: (taskId: string, subtaskId: string) => void;
   togglePriority: (id: string) => void;
-  toggleRecurrenceState: (id: string) => void; // New: toggle recurring task state
+  toggleRecurrenceState: (id: string) => void;
+  setSearchTerm: (term: string) => void;
+  setFilterCategory: (category: string | null) => void;
+  setFilterPriority: (priority: string | null) => void;
+  setFilterDueDate: (date: string | null) => void;
+  setSort: (sortBy: 'priority' | 'dueDate' | 'category' | 'createdAt', direction: 'asc' | 'desc') => void;
+  setPage: (page: number) => void;
+  addCategory: (category: string) => void;
+  getFilteredAndSortedTasks: () => Task[];
+  getPaginatedTasks: () => Task[];
+  getTotalPages: () => number;
 };
 
 const TaskContext = createContext<TaskContextType | undefined>(undefined);
@@ -346,6 +434,123 @@ export const TaskProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     dispatch({ type: 'TOGGLE_RECURRENCE_STATE', payload: id });
   };
 
+  const setSearchTerm = (term: string) => {
+    dispatch({ type: 'SET_SEARCH_TERM', payload: term });
+  };
+
+  const setFilterCategory = (category: string | null) => {
+    dispatch({ type: 'SET_FILTER_CATEGORY', payload: category });
+  };
+
+  const setFilterPriority = (priority: string | null) => {
+    dispatch({ type: 'SET_FILTER_PRIORITY', payload: priority });
+  };
+
+  const setFilterDueDate = (date: string | null) => {
+    dispatch({ type: 'SET_FILTER_DUE_DATE', payload: date });
+  };
+
+  const setSort = (sortBy: 'priority' | 'dueDate' | 'category' | 'createdAt', direction: 'asc' | 'desc') => {
+    dispatch({ type: 'SET_SORT', payload: { sortBy, direction } });
+  };
+
+  const setPage = (page: number) => {
+    dispatch({ type: 'SET_PAGE', payload: page });
+  };
+
+  const addCategory = (category: string) => {
+    dispatch({ type: 'ADD_CATEGORY', payload: category });
+  };
+
+  const getFilteredAndSortedTasks = (): Task[] => {
+    let filteredTasks = [...state.tasks];
+    
+    // Apply search term filter
+    if (state.searchTerm) {
+      const searchLower = state.searchTerm.toLowerCase();
+      filteredTasks = filteredTasks.filter(task => 
+        task.title.toLowerCase().includes(searchLower) || 
+        (task.description && task.description.toLowerCase().includes(searchLower))
+      );
+    }
+    
+    // Apply category filter
+    if (state.filterCategory) {
+      filteredTasks = filteredTasks.filter(task => task.category === state.filterCategory);
+    }
+    
+    // Apply priority filter
+    if (state.filterPriority) {
+      filteredTasks = filteredTasks.filter(task => task.priority === state.filterPriority);
+    }
+    
+    // Apply due date filter
+    if (state.filterDueDate) {
+      const filterDate = new Date(state.filterDueDate);
+      filterDate.setHours(0, 0, 0, 0);
+      
+      filteredTasks = filteredTasks.filter(task => {
+        if (!task.dueDate) return false;
+        
+        const taskDate = new Date(task.dueDate);
+        taskDate.setHours(0, 0, 0, 0);
+        
+        return taskDate.getTime() === filterDate.getTime();
+      });
+    }
+    
+    // Apply sorting
+    filteredTasks.sort((a, b) => {
+      let comparison = 0;
+      
+      switch (state.sortBy) {
+        case 'priority':
+          const priorityOrder = { high: 3, medium: 2, low: 1 };
+          comparison = priorityOrder[b.priority] - priorityOrder[a.priority];
+          break;
+        
+        case 'dueDate':
+          if (a.dueDate && b.dueDate) {
+            comparison = new Date(a.dueDate).getTime() - new Date(b.dueDate).getTime();
+          } else if (a.dueDate) {
+            comparison = -1;
+          } else if (b.dueDate) {
+            comparison = 1;
+          }
+          break;
+        
+        case 'category':
+          if (a.category && b.category) {
+            comparison = a.category.localeCompare(b.category);
+          } else if (a.category) {
+            comparison = -1;
+          } else if (b.category) {
+            comparison = 1;
+          }
+          break;
+        
+        case 'createdAt':
+          comparison = new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime();
+          break;
+      }
+      
+      return state.sortDirection === 'asc' ? comparison : -comparison;
+    });
+    
+    return filteredTasks;
+  };
+  
+  const getPaginatedTasks = (): Task[] => {
+    const filteredAndSorted = getFilteredAndSortedTasks();
+    const startIndex = (state.currentPage - 1) * state.tasksPerPage;
+    return filteredAndSorted.slice(startIndex, startIndex + state.tasksPerPage);
+  };
+  
+  const getTotalPages = (): number => {
+    const filteredAndSorted = getFilteredAndSortedTasks();
+    return Math.ceil(filteredAndSorted.length / state.tasksPerPage);
+  };
+
   return (
     <TaskContext.Provider
       value={{
@@ -359,6 +564,16 @@ export const TaskProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
         deleteSubtask,
         togglePriority,
         toggleRecurrenceState,
+        setSearchTerm,
+        setFilterCategory,
+        setFilterPriority,
+        setFilterDueDate,
+        setSort,
+        setPage,
+        addCategory,
+        getFilteredAndSortedTasks,
+        getPaginatedTasks,
+        getTotalPages
       }}
     >
       {children}
