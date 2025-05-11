@@ -35,7 +35,7 @@ const TimerPage: React.FC = () => {
         transition={{ duration: 0.5 }}
       >
         <h1 className="text-2xl font-bold bg-gradient-to-r from-focus-400 to-focus-300 text-transparent bg-clip-text">Focus Timer</h1>
-        <p className="text-gray-500 text-sm">Stay focused and grow your tree</p>
+        <p className="text-gray-500 text-sm dark:text-gray-400">Stay focused and grow your tree</p>
       </motion.div>
       
       <div className="flex flex-col items-center">
@@ -52,9 +52,9 @@ const TimerPage: React.FC = () => {
       </div>
       
       <Tabs defaultValue="focus" className="mt-6">
-        <TabsList className="grid w-full grid-cols-2">
-          <TabsTrigger value="focus">Timer</TabsTrigger>
-          <TabsTrigger value="settings">Settings</TabsTrigger>
+        <TabsList className="grid w-full grid-cols-2 rounded-xl">
+          <TabsTrigger value="focus" className="rounded-lg data-[state=active]:shadow-sm">Timer</TabsTrigger>
+          <TabsTrigger value="settings" className="rounded-lg data-[state=active]:shadow-sm">Settings</TabsTrigger>
         </TabsList>
         
         <TabsContent value="focus" className="mt-4">
@@ -67,7 +67,7 @@ const TimerPage: React.FC = () => {
               animate={{ opacity: 1 }}
               transition={{ delay: 0.4 }}
             >
-              <h3 className="text-sm font-medium text-gray-500 mb-3">Focus suggestions:</h3>
+              <h3 className="text-sm font-medium text-gray-500 dark:text-gray-400 mb-3">Focus suggestions:</h3>
               <div className="space-y-2">
                 {priorityTasks.map((task, index) => (
                   <motion.div 
@@ -78,13 +78,13 @@ const TimerPage: React.FC = () => {
                   >
                     <Button
                       variant="outline"
-                      className="w-full justify-start text-left h-auto py-3"
+                      className="w-full justify-start text-left h-auto py-3 shadow-sm hover:shadow transition-all duration-200 hover:border-focus-300 rounded-xl"
                       onClick={() => handleTaskSelect(task.title)}
                     >
                       <div>
                         <p>{task.title}</p>
                         {task.subtasks.length > 0 && (
-                          <p className="text-xs text-gray-500 mt-1">
+                          <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
                             {task.subtasks.filter(st => !st.completed).length} subtasks remaining
                           </p>
                         )}
@@ -98,18 +98,18 @@ const TimerPage: React.FC = () => {
           
           {priorityTasks.length === 0 && (
             <motion.div 
-              className="mt-6 bg-gray-50 dark:bg-gray-800 p-4 rounded-lg"
+              className="mt-6 bg-gray-50/80 dark:bg-gray-800/50 p-4 rounded-xl border border-gray-100 dark:border-gray-700 shadow-sm"
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
               transition={{ delay: 0.4 }}
             >
-              <h3 className="font-medium">No priority tasks</h3>
-              <p className="text-sm text-gray-500 mt-1">
+              <h3 className="font-medium text-foreground">No priority tasks</h3>
+              <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">
                 Mark important tasks as priority to see them here
               </p>
               <Button 
                 variant="outline" 
-                className="mt-3"
+                className="mt-3 shadow-sm hover:shadow"
                 onClick={() => navigate('/')}
               >
                 View All Tasks

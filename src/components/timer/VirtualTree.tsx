@@ -95,7 +95,7 @@ const VirtualTree: React.FC = () => {
           initial={{ y: -20, opacity: 1, scale: 0.5 }}
           animate={{ y: 0, opacity: 0, scale: 1 }}
           transition={{ duration: 1.5 }}
-          className="absolute mb-16 text-blue-400"
+          className="absolute mb-16 text-blue-400 dark:text-blue-300"
         >
           <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor">
             <path d="M12 2L5.5 8.5C2.5 11.5 2.5 16.5 5.5 19.5C8.5 22.5 13.5 22.5 16.5 19.5C19.5 16.5 19.5 11.5 16.5 8.5L12 2Z" />
@@ -106,7 +106,7 @@ const VirtualTree: React.FC = () => {
       <motion.div 
         className={cn(
           "relative cursor-pointer transition-all duration-500",
-          isRunning ? "scale-100" : "scale-90 opacity-70"
+          isRunning ? "scale-100" : "scale-90 opacity-80"
         )}
         animate={{ 
           rotate: isShaking ? [-5, 5, -3, 3, 0] : 0,
@@ -120,6 +120,8 @@ const VirtualTree: React.FC = () => {
         onClick={handleTreeInteraction}
         whileHover={{ scale: isRunning ? 1.1 : 1 }}
         whileTap={{ scale: isRunning ? 0.95 : 1 }}
+        aria-label={isRunning ? "Water your tree" : "Tree"}
+        role="button"
       >
         <TreeDeciduous 
           size={currentStage.size} 
@@ -149,7 +151,7 @@ const VirtualTree: React.FC = () => {
       </motion.div>
       
       <motion.div 
-        className="mt-3 text-xs text-gray-500 dark:text-gray-400"
+        className="mt-4 text-xs text-gray-500 dark:text-gray-400 text-center"
         initial={{ opacity: 0, y: 5 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ delay: 0.3 }}
@@ -167,7 +169,7 @@ const VirtualTree: React.FC = () => {
         )}
         
         {isRunning && treeHealth > 0 && (
-          <p className="mt-1 text-xs opacity-75">
+          <p className="mt-1.5 text-xs opacity-75">
             Tap the tree to water it
           </p>
         )}
