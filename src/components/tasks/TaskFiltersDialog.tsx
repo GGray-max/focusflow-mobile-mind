@@ -54,14 +54,14 @@ const TaskFiltersDialog: React.FC<TaskFiltersDialogProps> = ({ isOpen, onClose }
           >
             <Label htmlFor="filterCategory">Category</Label>
             <Select 
-              value={filterCategory || ""} 
-              onValueChange={(value) => setFilterCategory(value || null)}
+              value={filterCategory || "all"} 
+              onValueChange={(value) => setFilterCategory(value === "all" ? null : value)}
             >
               <SelectTrigger id="filterCategory" className="border-focus-200 focus:border-focus-400">
                 <SelectValue placeholder="All Categories" />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="">All Categories</SelectItem>
+                <SelectItem value="all">All Categories</SelectItem>
                 {categories.map((category) => (
                   <SelectItem key={category} value={category}>
                     {category}
@@ -79,14 +79,14 @@ const TaskFiltersDialog: React.FC<TaskFiltersDialogProps> = ({ isOpen, onClose }
           >
             <Label htmlFor="filterPriority">Priority</Label>
             <Select 
-              value={filterPriority || ""} 
-              onValueChange={(value) => setFilterPriority(value || null)}
+              value={filterPriority || "all"} 
+              onValueChange={(value) => setFilterPriority(value === "all" ? null : value)}
             >
               <SelectTrigger id="filterPriority" className="border-focus-200 focus:border-focus-400">
                 <SelectValue placeholder="All Priorities" />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="">All Priorities</SelectItem>
+                <SelectItem value="all">All Priorities</SelectItem>
                 <SelectItem value="low">Low</SelectItem>
                 <SelectItem value="medium">Medium</SelectItem>
                 <SelectItem value="high">High</SelectItem>
