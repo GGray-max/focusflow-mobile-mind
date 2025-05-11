@@ -2,7 +2,7 @@
 import React, { useState } from 'react';
 import { Calendar } from '@/components/ui/calendar';
 import { useTasks, Task } from '@/contexts/TaskContext';
-import { format, startOfDay, isSameDay } from 'date-fns';
+import { format, startOfDay, isSameDay, isValid } from 'date-fns';
 import { cn } from '@/lib/utils';
 import { Badge } from '@/components/ui/badge';
 import { ScrollArea } from '@/components/ui/scroll-area';
@@ -21,46 +21,69 @@ const CalendarView: React.FC<CalendarViewProps> = ({ onTaskSelect }) => {
   // Group tasks by date
   const tasksByDate = tasks.reduce((acc, task) => {
     if (task.dueDate) {
-      const dateStr = startOfDay(new Date(task.dueDate)).toISOString();
-      if (!acc[dateStr]) {
-        acc[dateStr] = [];
+      try {
+        const taskDate = new Date(task.dueDate);
+        
+        // Validate date before using it
+        if (isValid(taskDate)) {
+          const dateStr = startOfDay(taskDate).toISOString();
+          if (!acc[dateStr]) {
+            acc[dateStr] = [];
+          }
+          acc[dateStr].push(task);
+        }
+      } catch (error) {
+        console.error("Invalid date in task:", task);
       }
-      acc[dateStr].push(task);
     }
     return acc;
   }, {} as Record<string, Task[]>);
 
   // Get tasks for selected date
-  const tasksForSelectedDate = tasks.filter(task => 
-    task.dueDate && isSameDay(new Date(task.dueDate), selectedDate)
-  );
+  const tasksForSelectedDate = tasks.filter(task => {
+    if (!task.dueDate) return false;
+    
+    try {
+      const taskDate = new Date(task.dueDate);
+      return isValid(taskDate) && isSameDay(taskDate, selectedDate);
+    } catch (error) {
+      return false;
+    }
+  });
 
   // Custom day renderer to show tasks count
   const renderDay = (day: Date) => {
-    const dateStr = startOfDay(day).toISOString();
-    const dateHasTasks = tasksByDate[dateStr]?.length > 0;
-    const taskCount = tasksByDate[dateStr]?.length || 0;
+    if (!isValid(day)) return <div>{day.getDate()}</div>;
     
-    return (
-      <div className="relative">
-        <div>{day.getDate()}</div>
-        {dateHasTasks && (
-          <div className="absolute bottom-0 left-1/2 transform -translate-x-1/2">
-            <Badge 
-              variant="secondary" 
-              className={cn(
-                "text-[0.6rem] h-4 min-w-4 px-1 flex items-center justify-center",
-                tasksByDate[dateStr].some(t => t.isPriority) 
-                  ? "bg-focus-200 text-focus-800" 
-                  : "bg-muted"
-              )}
-            >
-              {taskCount}
-            </Badge>
-          </div>
-        )}
-      </div>
-    );
+    try {
+      const dateStr = startOfDay(day).toISOString();
+      const dateHasTasks = tasksByDate[dateStr]?.length > 0;
+      const taskCount = tasksByDate[dateStr]?.length || 0;
+      
+      return (
+        <div className="relative">
+          <div>{day.getDate()}</div>
+          {dateHasTasks && (
+            <div className="absolute bottom-0 left-1/2 transform -translate-x-1/2">
+              <Badge 
+                variant="secondary" 
+                className={cn(
+                  "text-[0.6rem] h-4 min-w-4 px-1 flex items-center justify-center",
+                  tasksByDate[dateStr].some(t => t.isPriority) 
+                    ? "bg-focus-200 text-focus-800" 
+                    : "bg-muted"
+                )}
+              >
+                {taskCount}
+              </Badge>
+            </div>
+          )}
+        </div>
+      );
+    } catch (error) {
+      // If there's any error processing the date, just show the day number
+      return <div>{day.getDate()}</div>;
+    }
   };
   
   // Get task color based on priority
@@ -92,13 +115,6 @@ const CalendarView: React.FC<CalendarViewProps> = ({ onTaskSelect }) => {
             selected={selectedDate}
             onSelect={(date) => date && setSelectedDate(date)}
             className="rounded-md pointer-events-auto"
-            components={{
-              Day: ({ day, ...props }) => (
-                <button {...props}>
-                  {renderDay(day)}
-                </button>
-              )
-            }}
           />
         </Card>
       </motion.div>
