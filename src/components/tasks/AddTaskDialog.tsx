@@ -207,13 +207,13 @@ const AddTaskDialog: React.FC<AddTaskDialogProps> = ({ isOpen, onClose }) => {
 
   return (
     <Dialog open={isOpen} onOpenChange={handleClose}>
-      <DialogContent className="sm:max-w-md max-h-[90vh] flex flex-col p-0">
-        <DialogHeader className="px-6 pt-6">
-          <DialogTitle>Add New Task</DialogTitle>
+      <DialogContent className="sm:max-w-md max-h-[90vh] overflow-hidden flex flex-col p-0">
+        <DialogHeader className="px-6 pt-6 shrink-0">
+          <DialogTitle className="text-foreground dark:text-white">Add New Task</DialogTitle>
         </DialogHeader>
         
-        <ScrollArea className="flex-1 max-h-[calc(90vh-8rem)]">
-          <form onSubmit={handleSubmit} className="space-y-4 px-6">
+        <ScrollArea className="flex-1 px-6 max-h-[calc(90vh-8rem)]">
+          <form onSubmit={handleSubmit} className="space-y-4 py-2">
             <motion.div 
               className="space-y-2"
               initial={{ opacity: 0, y: 10 }}
@@ -605,11 +605,11 @@ const AddTaskDialog: React.FC<AddTaskDialogProps> = ({ isOpen, onClose }) => {
           </form>
         </ScrollArea>
         
-        <DialogFooter className="px-6 py-4 border-t">
+        <DialogFooter className="px-6 py-4 border-t mt-2 shrink-0 bg-background dark:bg-background">
           <Button type="button" variant="outline" onClick={handleClose} className="border-focus-200 hover:border-focus-400">
             Cancel
           </Button>
-          <Button type="button" onClick={handleSubmit} className="bg-focus-400 hover:bg-focus-500">
+          <Button type="button" onClick={handleSubmit} className="bg-focus-400 hover:bg-focus-500 text-white">
             Add Task
           </Button>
         </DialogFooter>
