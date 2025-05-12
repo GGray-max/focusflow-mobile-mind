@@ -30,6 +30,10 @@ const config: CapacitorConfig = {
     App: {
       backgroundColor: "#8B5CF6",
       webDir: "dist"
+    },
+    // Register our custom AppBlocker plugin
+    AppBlocker: {
+      blockedAppsAutoRestart: true
     }
   },
   // Android specific configuration

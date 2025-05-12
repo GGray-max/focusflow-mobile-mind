@@ -1,0 +1,8 @@
+
+<resources>
+    <string name="app_name">FocusTask</string>
+    <string name="title_activity_main">FocusTask</string>
+    <string name="package_name">com.focustask.app</string>
+    <string name="custom_url_scheme">com.focustask.app</string>
+    <string name="accessibility_service_description">This service enables app blocking during focus time, helping you stay focused and avoid distractions.</string>
+</resources>
