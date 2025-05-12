@@ -212,7 +212,7 @@ const AddTaskDialog: React.FC<AddTaskDialogProps> = ({ isOpen, onClose }) => {
           <DialogTitle className="text-foreground dark:text-white">Add New Task</DialogTitle>
         </DialogHeader>
         
-        <ScrollArea className="flex-1 px-6 max-h-[calc(90vh-8rem)]">
+        <ScrollArea className="flex-1 px-6 max-h-[calc(90vh-8rem)] overflow-y-auto">
           <form onSubmit={handleSubmit} className="space-y-4 py-2">
             <motion.div 
               className="space-y-2"
@@ -244,7 +244,7 @@ const AddTaskDialog: React.FC<AddTaskDialogProps> = ({ isOpen, onClose }) => {
                 onChange={(e) => setDescription(e.target.value)}
                 placeholder="Enter task details"
                 rows={3}
-                className="border-focus-200 focus:border-focus-400"
+                className="border-focus-200 focus:border-focus-400 dark:text-gray-100"
               />
             </motion.div>
             
