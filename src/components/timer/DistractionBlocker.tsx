@@ -32,7 +32,7 @@ import {
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
 import { useTimer } from '@/contexts/TimerContext';
-import { Capacitor, Plugins } from '@capacitor/core';
+import { Capacitor } from '@capacitor/core';
 
 // Define a custom interface for the native plugin
 interface AppBlockerPlugin {
@@ -83,7 +83,9 @@ const DistractionBlocker: React.FC = () => {
           }
 
           // Check if the service is enabled
-          const AppBlocker = (Capacitor as any).Plugins.AppBlocker as AppBlockerPlugin;
+          const AppBlocker = Capacitor.getPlatform() === 'android' ? 
+            (Capacitor as any).registerPlugin('AppBlocker') as AppBlockerPlugin : null;
+
           if (AppBlocker) {
             const result = await AppBlocker.isServiceEnabled();
             setServiceEnabled(result.enabled);
@@ -109,7 +111,9 @@ const DistractionBlocker: React.FC = () => {
       // Update the native blocking service if on native platform
       if (isNativePlatform && serviceEnabled) {
         try {
-          const AppBlocker = (Capacitor as any).Plugins.AppBlocker as AppBlockerPlugin;
+          const AppBlocker = Capacitor.getPlatform() === 'android' ? 
+            (Capacitor as any).registerPlugin('AppBlocker') as AppBlockerPlugin : null;
+          
           if (AppBlocker) {
             AppBlocker.setBlockedApps({ 
               apps: blockedApps.map(app => app.packageName) 
@@ -128,7 +132,9 @@ const DistractionBlocker: React.FC = () => {
 
     const updateBlockingService = async () => {
       try {
-        const AppBlocker = (Capacitor as any).Plugins.AppBlocker as AppBlockerPlugin;
+        const AppBlocker = Capacitor.getPlatform() === 'android' ? 
+          (Capacitor as any).registerPlugin('AppBlocker') as AppBlockerPlugin : null;
+        
         if (!AppBlocker) return;
 
         if (isRunning && mode === 'focus' && blockedApps.length > 0) {
@@ -161,7 +167,9 @@ const DistractionBlocker: React.FC = () => {
     }
 
     try {
-      const AppBlocker = (Capacitor as any).Plugins.AppBlocker as AppBlockerPlugin;
+      const AppBlocker = Capacitor.getPlatform() === 'android' ? 
+        (Capacitor as any).registerPlugin('AppBlocker') as AppBlockerPlugin : null;
+      
       if (AppBlocker) {
         // First check if we have permission
         const permissionStatus = await AppBlocker.isServiceEnabled();
@@ -194,7 +202,9 @@ const DistractionBlocker: React.FC = () => {
     if (!isNativePlatform) return;
 
     try {
-      const AppBlocker = (Capacitor as any).Plugins.AppBlocker as AppBlockerPlugin;
+      const AppBlocker = Capacitor.getPlatform() === 'android' ? 
+        (Capacitor as any).registerPlugin('AppBlocker') as AppBlockerPlugin : null;
+      
       if (AppBlocker) {
         const result = await AppBlocker.requestBlockingPermission();
         setServiceEnabled(result.granted);
