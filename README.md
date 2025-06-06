@@ -21,12 +21,12 @@ FocusFlow Mobile Mind is a mobile application designed to help users track and i
 
 2. Install dependencies:
    ```sh
-   npm install
+   npm install/npm i
    ```
 
 3. Start the development server:
    ```sh
-   npm start
+   npm start/npm run dev
    ```
 
 ## Development
