@@ -1,73 +1,56 @@
-# Welcome to your Lovable project
+# FocusFlow Mobile Mind
 
-## Project info
+## Project Overview
 
-**URL**: https://lovable.dev/projects/1e6cfafd-31b1-40ce-b4c9-9f530fa6e4d6
+FocusFlow Mobile Mind is a mobile application designed to help users track and improve their focus sessions. The app provides tools for managing focus time, reviewing session history, and analyzing productivity patterns.
 
-## How can I edit this code?
+## Getting Started
 
-There are several ways of editing your application.
+### Prerequisites
 
-**Use Lovable**
+- Node.js & npm (recommended to install via [nvm](https://github.com/nvm-sh/nvm#installing-and-updating))
+- React Native development environment setup
 
-Simply visit the [Lovable Project](https://lovable.dev/projects/1e6cfafd-31b1-40ce-b4c9-9f530fa6e4d6) and start prompting.
+### Installation
 
-Changes made via Lovable will be committed automatically to this repo.
+1. Clone the repository:
+   ```sh
+   git clone <YOUR_GIT_URL>
+   cd focusflow-mobile-mind
+   ```
 
-**Use your preferred IDE**
+2. Install dependencies:
+   ```sh
+   npm install
+   ```
 
-If you want to work locally using your own IDE, you can clone this repo and push changes. Pushed changes will also be reflected in Lovable.
+3. Start the development server:
+   ```sh
+   npm start
+   ```
 
-The only requirement is having Node.js & npm installed - [install with nvm](https://github.com/nvm-sh/nvm#installing-and-updating)
+## Development
 
-Follow these steps:
+### Technologies Used
 
-```sh
-# Step 1: Clone the repository using the project's Git URL.
-git clone <YOUR_GIT_URL>
-
-# Step 2: Navigate to the project directory.
-cd <YOUR_PROJECT_NAME>
-
-# Step 3: Install the necessary dependencies.
-npm i
-
-# Step 4: Start the development server with auto-reloading and an instant preview.
-npm run dev
-```
-
-**Edit a file directly in GitHub**
-
-- Navigate to the desired file(s).
-- Click the "Edit" button (pencil icon) at the top right of the file view.
-- Make your changes and commit the changes.
-
-**Use GitHub Codespaces**
-
-- Navigate to the main page of your repository.
-- Click on the "Code" button (green button) near the top right.
-- Select the "Codespaces" tab.
-- Click on "New codespace" to launch a new Codespace environment.
-- Edit files directly within the Codespace and commit and push your changes once you're done.
-
-## What technologies are used for this project?
-
-This project is built with:
-
-- Vite
+- React Native
 - TypeScript
-- React
-- shadcn-ui
-- Tailwind CSS
+- React Navigation
+- Redux (or your state management solution)
+- (Add any other major technologies used in the project)
 
-## How can I deploy this project?
+### Project Structure
 
-Simply open [Lovable](https://lovable.dev/projects/1e6cfafd-31b1-40ce-b4c9-9f530fa6e4d6) and click on Share -> Publish.
+(Add a brief overview of your project structure here)
 
-## Can I connect a custom domain to my Lovable project?
+## Building and Deployment
 
-Yes, you can!
+(Add instructions for building and deploying the application)
 
-To connect a domain, navigate to Project > Settings > Domains and click Connect Domain.
+## Contributing
 
-Read more here: [Setting up a custom domain](https://docs.lovable.dev/tips-tricks/custom-domain#step-by-step-guide)
+(Add contribution guidelines if applicable)
+
+## License
+
+(Add license information)
