@@ -8,7 +8,7 @@ import { Checkbox } from '@/components/ui/checkbox';
 import { format } from 'date-fns';
 import { Task, useTasks } from '@/contexts/TaskContext';
 import { useTimer } from '@/contexts/TimerContext';
-import { Calendar, Clock, Trash, Check, Edit, Save, X } from 'lucide-react';
+import { Calendar, Clock, Trash, Check, Edit, Save, X, RotateCcw, Timer } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { Textarea } from '@/components/ui/textarea';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
@@ -18,6 +18,9 @@ import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { motion, AnimatePresence } from 'framer-motion';
 import { toast } from '@/components/ui/use-toast';
+import TaskTimeDisplay from '@/components/task/TaskTimeDisplay';
+import { formatTime } from '@/services/TimerService';
+import TaskLiveTimer from '@/components/task/TaskLiveTimer';
 
 interface TaskDetailDialogProps {
   task: Task | null;
@@ -31,9 +34,16 @@ const TaskDetailDialog: React.FC<TaskDetailDialogProps> = ({ task, isOpen, onClo
   const [editedTask, setEditedTask] = useState<Task | null>(null);
   const [dueDate, setDueDate] = useState<Date | undefined>(undefined);
   
-  const { toggleComplete, toggleSubtask, addSubtask, deleteTask, updateTask, state } = useTasks();
+  const { toggleComplete, toggleSubtask, addSubtask, deleteTask, updateTask, state, resetTaskTime, addFocusTime } = useTasks();
   const { categories } = state;
-  const { startTimer } = useTimer();
+  const { startTimer, addEventListener, removeEventListener, switchToFocus, state: timerState } = useTimer();
+  
+  // Check if this task is currently being timed
+  const isTaskActive = task ? (
+    timerState.isRunning && 
+    timerState.mode === 'focus' && 
+    timerState.currentTaskId === task.id
+  ) : false;
   const navigate = useNavigate();
 
   useEffect(() => {
@@ -45,9 +55,62 @@ const TaskDetailDialog: React.FC<TaskDetailDialogProps> = ({ task, isOpen, onClo
 
   const handleStartFocusSession = () => {
     if (task) {
-      startTimer(task.title);
+      // Default to 25 minutes (Pomodoro session) if no duration specified
+      const durationSeconds = (task.duration || 25) * 60;
+      
+      // Always switch to focus mode first
+      switchToFocus();
+      
+      // Start the timer with the task name and ID
+      startTimer(durationSeconds, task.title, task.id);
+      
+      // Set up listener to track time when session ends
+      setupTimerListeners(task.id);
+      
       onClose();
       navigate('/timer');
+    }
+  };
+  
+  // Set up listeners to track time when timer sessions end or are stopped
+  const setupTimerListeners = (taskId: string) => {
+    const handleTimerFinished = (data: any) => {
+      if (data.taskId === taskId) {
+        // Add the completed session time to the task
+        addFocusTime(taskId, data.duration);
+        // Remove the listener once handled
+        removeTimerListener();
+      }
+    };
+    
+    const handleTimerStopped = (data: any) => {
+      if (data.taskId === taskId && data.timeSpent > 0) {
+        // Add the partial session time to the task
+        addFocusTime(taskId, data.timeSpent);
+        // Remove the listener once handled
+        removeTimerListener();
+      }
+    };
+    
+    // Setup listeners for timer events - using the context instance
+    addEventListener('timerFinished', handleTimerFinished);
+    addEventListener('timerStopped', handleTimerStopped);
+    
+    // Function to remove listeners
+    const removeTimerListener = () => {
+      removeEventListener('timerFinished', handleTimerFinished);
+      removeEventListener('timerStopped', handleTimerStopped);
+    };
+  };
+  
+  // Handle resetting the accumulated time for a task
+  const handleResetTaskTime = () => {
+    if (task) {
+      resetTaskTime(task.id);
+      toast({
+        title: "Time reset",
+        description: "Time tracking has been reset for this task",
+      });
     }
   };
 
@@ -104,8 +167,8 @@ const TaskDetailDialog: React.FC<TaskDetailDialogProps> = ({ task, isOpen, onClo
 
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
-      <DialogContent className="sm:max-w-md">
-        <DialogHeader>
+      <DialogContent className="sm:max-w-md max-h-[90vh] overflow-y-auto">
+        <DialogHeader className="sticky top-0 z-10 bg-background pt-4 pb-2">
           <DialogTitle className="flex items-center justify-between">
             <div className="flex items-center gap-3">
               <Checkbox 
@@ -158,7 +221,7 @@ const TaskDetailDialog: React.FC<TaskDetailDialogProps> = ({ task, isOpen, onClo
           </DialogTitle>
         </DialogHeader>
         
-        <div className="space-y-4 my-2">
+        <div className="space-y-4 my-2 pb-4">
           <AnimatePresence mode="wait">
             {isEditing ? (
               <motion.div 
@@ -371,6 +434,52 @@ const TaskDetailDialog: React.FC<TaskDetailDialogProps> = ({ task, isOpen, onClo
                     </div>
                   </div>
                 )}
+                
+                {/* Time tracking section */}
+                <div>
+                  <h4 className="text-sm font-medium text-gray-500 mb-1">Time Tracking</h4>
+                  
+                  {task.totalTimeSpent && task.totalTimeSpent > 0 ? (
+                    <div className="bg-violet-50 dark:bg-violet-900/20 text-violet-700 dark:text-violet-300 px-3 py-2 rounded-md text-sm">
+                      <div className="flex items-center justify-between">
+                        <div className="flex items-center">
+                          <Timer size={14} className="mr-2" />
+                          <TaskTimeDisplay task={task} />
+                        </div>
+                        <Button 
+                          variant="ghost" 
+                          size="sm"
+                          onClick={handleResetTaskTime}
+                          className="h-6 w-6 p-0"
+                          title="Reset time tracking"
+                        >
+                          <RotateCcw size={12} />
+                        </Button>
+                      </div>
+                      
+                      {/* Show focus session history if available */}
+                      {task.focusSessions && task.focusSessions.length > 0 && (
+                        <div className="mt-2 text-xs text-violet-600 dark:text-violet-400 ml-6">
+                          <div>Recent sessions:</div>
+                          <ul className="list-disc pl-4 mt-1 space-y-1">
+                            {task.focusSessions.slice(-3).reverse().map((session, idx) => (
+                              <li key={idx}>
+                                {formatTime(session.duration)} on {format(new Date(session.date), 'MMM d, h:mm a')}
+                              </li>
+                            ))}
+                          </ul>
+                        </div>
+                      )}
+                    </div>
+                  ) : (
+                    <div className="bg-gray-100 dark:bg-gray-800 px-3 py-2 rounded-md text-sm text-gray-500">
+                      <div className="flex items-center">
+                        <Timer size={14} className="mr-2" />
+                        <span>No time tracked yet</span>
+                      </div>
+                    </div>
+                  )}
+                </div>
               </motion.div>
             )}
           </AnimatePresence>
@@ -439,12 +548,18 @@ const TaskDetailDialog: React.FC<TaskDetailDialogProps> = ({ task, isOpen, onClo
               >
                 <Trash size={16} className="mr-1" /> Delete
               </Button>
-              <Button
-                onClick={handleStartFocusSession}
-                className="w-full sm:w-auto bg-focus-400 hover:bg-focus-500"
-              >
-                <Clock size={16} className="mr-1" /> Start Focus Session
-              </Button>
+              {isTaskActive ? (
+                <div className="flex items-center gap-2 w-full sm:w-auto">
+                  <TaskLiveTimer taskId={task.id} />
+                </div>
+              ) : (
+                <Button
+                  onClick={handleStartFocusSession}
+                  className="w-full sm:w-auto bg-focus-400 hover:bg-focus-500"
+                >
+                  <Clock size={16} className="mr-1" /> Start Focus Session {task.duration ? `(${task.duration} min)` : ''}
+                </Button>
+              )}
             </>
           )}
         </DialogFooter>

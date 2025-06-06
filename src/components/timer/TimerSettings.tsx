@@ -26,10 +26,12 @@ const TimerSettings: React.FC = () => {
     return document.documentElement.classList.contains('dark');
   });
   
-  // Format total time
-  const formatTotalTime = (seconds: number) => {
-    const hours = Math.floor(seconds / 3600);
-    const minutes = Math.floor((seconds % 3600) / 60);
+  // Format total time from milliseconds
+  const formatTotalTime = (milliseconds: number) => {
+    // Convert milliseconds to hours and minutes
+    const totalSeconds = Math.floor(milliseconds / 1000);
+    const hours = Math.floor(totalSeconds / 3600);
+    const minutes = Math.floor((totalSeconds % 3600) / 60);
     
     if (hours > 0) {
       return `${hours}h ${minutes}m`;

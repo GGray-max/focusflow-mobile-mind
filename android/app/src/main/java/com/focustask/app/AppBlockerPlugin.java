@@ -140,7 +140,7 @@ public class AppBlockerPlugin extends Plugin {
         super.handleOnActivityResult(requestCode, resultCode, data);
         
         if (requestCode == 1) {
-            PluginCall savedCall = bridge.getSavedCall();
+            PluginCall savedCall = bridge.getSavedCall("app_blocker_permission_request");
             
             if (savedCall == null) {
                 return;

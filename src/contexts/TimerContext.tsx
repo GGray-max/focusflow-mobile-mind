@@ -8,8 +8,9 @@ type TimerMode = 'focus' | 'break' | 'idle';
 interface FocusSession {
   id: string;
   date: string; // ISO string
-  duration: number; // in seconds
+  duration: number; // in milliseconds
   task: string | null;
+  taskId: string | null; // Add task ID for tracking time by task
   completed: boolean;
 }
 
@@ -21,18 +22,19 @@ interface TimerState {
   breakDuration: number; // in minutes
   sessionsCompleted: number;
   currentTask: string | null;
+  currentTaskId: string | null; // Store current task ID
   treeHealth: number; // Tree health
   streakDays: number; // Track consecutive days of completed sessions
   lastActiveDay: string | null; // Track last day user completed a session
   focusSessions: FocusSession[]; // Track focus sessions
-  totalFocusTime: number; // Total seconds spent focusing
+  totalFocusTime: number; // Total milliseconds spent focusing
   sessionStartTime: number | null; // Timestamp when session started
   soundEnabled: boolean; // Whether timer completion sound is enabled
   tickEnabled: boolean; // Whether tick sound in last 5 seconds is enabled
 }
 
 type TimerAction =
-  | { type: 'START_TIMER'; payload?: { task?: string } }
+  | { type: 'START_TIMER'; payload?: { task?: string; taskId?: string } }
   | { type: 'PAUSE_TIMER' }
   | { type: 'RESET_TIMER' }
   | { type: 'TICK' }
@@ -44,7 +46,7 @@ type TimerAction =
   | { type: 'UPDATE_TREE_HEALTH'; payload: number }
   | { type: 'RESET_TREE_HEALTH' }
   | { type: 'UPDATE_STREAK' }
-  | { type: 'LOG_FOCUS_SESSION'; payload: { duration: number; task: string | null; completed: boolean } }
+  | { type: 'LOG_FOCUS_SESSION'; payload: { duration: number; task: string | null; taskId: string | null; completed: boolean } }
   | { type: 'TOGGLE_SOUND'; payload: boolean }
   | { type: 'TOGGLE_TICK_SOUND'; payload: boolean }
   | { type: 'LOAD_STATE'; payload: TimerState };
@@ -60,6 +62,7 @@ const initialState: TimerState = {
   breakDuration: DEFAULT_BREAK_DURATION,
   sessionsCompleted: 0,
   currentTask: null,
+  currentTaskId: null,
   treeHealth: 100,
   streakDays: 0,
   lastActiveDay: null,
@@ -78,18 +81,20 @@ const timerReducer = (state: TimerState, action: TimerAction): TimerState => {
         isRunning: true,
         mode: state.mode === 'idle' ? 'focus' : state.mode,
         currentTask: action.payload?.task || state.currentTask,
+        currentTaskId: action.payload?.taskId || state.currentTaskId,
         sessionStartTime: state.sessionStartTime || Date.now(),
       };
     case 'PAUSE_TIMER':
       // When pausing, log the partial session if we were in focus mode
       if (state.mode === 'focus' && state.sessionStartTime) {
-        const sessionDuration = Math.floor((Date.now() - state.sessionStartTime) / 1000);
-        if (sessionDuration > 10) { // Only log if more than 10 seconds
+        const sessionDurationMs = (Date.now() - state.sessionStartTime);
+        if (sessionDurationMs > 10000) { // Only log if more than 10 seconds
           const newSession: FocusSession = {
             id: `session-${Date.now()}`,
             date: new Date().toISOString(),
-            duration: sessionDuration,
+            duration: sessionDurationMs,
             task: state.currentTask,
+            taskId: state.currentTaskId,
             completed: false
           };
 
@@ -97,7 +102,7 @@ const timerReducer = (state: TimerState, action: TimerAction): TimerState => {
             ...state,
             isRunning: false,
             focusSessions: [...state.focusSessions, newSession],
-            totalFocusTime: state.totalFocusTime + sessionDuration,
+            totalFocusTime: state.totalFocusTime + sessionDurationMs,
             sessionStartTime: null
           };
         }
@@ -114,6 +119,7 @@ const timerReducer = (state: TimerState, action: TimerAction): TimerState => {
         isRunning: false,
         timeLeft: state.focusDuration * 60,
         currentTask: null,
+        currentTaskId: null,
         sessionStartTime: null
       };
     case 'TICK':
@@ -132,22 +138,23 @@ const timerReducer = (state: TimerState, action: TimerAction): TimerState => {
           const newSession: FocusSession = {
             id: `session-${Date.now()}`,
             date: new Date().toISOString(),
-            duration: state.focusDuration * 60,
+            duration: state.focusDuration * 60 * 1000,
             task: state.currentTask,
+            taskId: state.currentTaskId,
             completed: true
           };
 
           return {
             ...state,
-            isRunning: false,
+            isRunning: true,
             mode: 'break',
             timeLeft: state.breakDuration * 60,
             sessionsCompleted: state.sessionsCompleted + 1,
             lastActiveDay: today,
             streakDays: isNewStreak ? state.streakDays + 1 : state.streakDays,
             focusSessions: [...state.focusSessions, newSession],
-            totalFocusTime: state.totalFocusTime + (state.focusDuration * 60),
-            sessionStartTime: null
+            totalFocusTime: state.totalFocusTime + (state.focusDuration * 60 * 1000),
+            sessionStartTime: Date.now() // Start the break timer
           };
         } else if (state.mode === 'break') {
           return {
@@ -169,12 +176,42 @@ const timerReducer = (state: TimerState, action: TimerAction): TimerState => {
         timeLeft: state.timeLeft - 1,
       };
     case 'COMPLETE_SESSION':
-      return {
-        ...state,
-        sessionsCompleted: state.sessionsCompleted + 1,
-        isRunning: false,
-        sessionStartTime: null
-      };
+      if (state.mode === 'focus') {
+        // When completing a focus session, log it and reward the user
+        const sessionDurationMs = state.focusDuration * 60 * 1000; // in milliseconds
+        
+        const newSession: FocusSession = {
+          id: `session-${Date.now()}`,
+          date: new Date().toISOString(),
+          duration: sessionDurationMs,
+          task: state.currentTask,
+          taskId: state.currentTaskId,
+          completed: true
+        };
+
+        // Update streak
+        let streakDays = state.streakDays;
+        let lastActiveDay = state.lastActiveDay;
+        const today = new Date().toISOString().split('T')[0];
+        
+        if (lastActiveDay !== today) {
+          streakDays += 1;
+          lastActiveDay = today;
+        }
+
+        return {
+          ...state,
+          mode: 'break',
+          timeLeft: state.breakDuration * 60,
+          isRunning: true,
+          sessionsCompleted: state.sessionsCompleted + 1,
+          focusSessions: [...state.focusSessions, newSession],
+          totalFocusTime: state.totalFocusTime + sessionDurationMs,
+          streakDays,
+          lastActiveDay,
+          sessionStartTime: Date.now() // Start the break timer
+        };
+      } 
     case 'SWITCH_TO_BREAK':
       return {
         ...state,
@@ -228,13 +265,14 @@ const timerReducer = (state: TimerState, action: TimerAction): TimerState => {
         date: new Date().toISOString(),
         duration: action.payload.duration,
         task: action.payload.task,
+        taskId: action.payload.taskId,
         completed: action.payload.completed
       };
-
+      
       return {
         ...state,
         focusSessions: [...state.focusSessions, newFocusSession],
-        totalFocusTime: state.totalFocusTime + action.payload.duration,
+        totalFocusTime: state.totalFocusTime + action.payload.duration
       };
     case 'TOGGLE_SOUND':
       return {
@@ -255,7 +293,7 @@ const timerReducer = (state: TimerState, action: TimerAction): TimerState => {
 
 interface TimerContextType {
   state: TimerState;
-  startTimer: (task?: string) => void;
+  startTimer: (durationSeconds?: number, task?: string, taskId?: string) => void;
   pauseTimer: () => void;
   resetTimer: () => void;
   switchToBreak: () => void;
@@ -266,6 +304,8 @@ interface TimerContextType {
   resetTreeHealth: () => void;
   toggleSound: (enabled: boolean) => void;
   toggleTickSound: (enabled: boolean) => void;
+  addEventListener: (event: string, callback: Function) => void;
+  removeEventListener: (event: string, callback: Function) => void;
 }
 
 const TimerContext = createContext<TimerContextType | undefined>(undefined);
@@ -376,11 +416,18 @@ export const TimerProvider: React.FC<{ children: ReactNode }> = ({ children }) =
     };
   }, [state.isRunning, state.mode, state.treeHealth]);
 
-  const startTimer = (task?: string) => {
+  const startTimer = (durationSeconds?: number, task?: string, taskId?: string) => {
     if (state.mode === 'idle' || state.mode === 'focus') {
       resetTreeHealth();
     }
-    dispatch({ type: 'START_TIMER', payload: { task } });
+    
+    // If duration provided, set it as focus duration first
+    if (durationSeconds) {
+      const durationMinutes = Math.round(durationSeconds / 60);
+      setFocusDuration(durationMinutes);
+    }
+    
+    dispatch({ type: 'START_TIMER', payload: { task, taskId } });
   };
 
   const pauseTimer = () => {
@@ -425,6 +472,46 @@ export const TimerProvider: React.FC<{ children: ReactNode }> = ({ children }) =
     dispatch({ type: 'TOGGLE_TICK_SOUND', payload: enabled });
   };
 
+  // Add event listener system for timer events
+  const [listeners, setListeners] = React.useState<Record<string, Function[]>>({});
+  
+  const addEventListener = (event: string, callback: Function) => {
+    setListeners(prev => {
+      const updatedListeners = { ...prev };
+      if (!updatedListeners[event]) {
+        updatedListeners[event] = [];
+      }
+      updatedListeners[event] = [...updatedListeners[event], callback];
+      return updatedListeners;
+    });
+  };
+  
+  const removeEventListener = (event: string, callback: Function) => {
+    setListeners(prev => {
+      const updatedListeners = { ...prev };
+      if (updatedListeners[event]) {
+        updatedListeners[event] = updatedListeners[event].filter(cb => cb !== callback);
+      }
+      return updatedListeners;
+    });
+  };
+  
+  // Emit events when timer state changes
+  useEffect(() => {
+    if (state.mode === 'break' && state.timeLeft === state.breakDuration * 60) {
+      // Session completed
+      if (listeners['timerFinished']) {
+        const sessionData = {
+          taskId: state.currentTaskId,
+          task: state.currentTask,
+          duration: state.focusDuration * 60 * 1000, // Convert to milliseconds
+          completed: true
+        };
+        listeners['timerFinished'].forEach(cb => cb(sessionData));
+      }
+    }
+  }, [state.mode, state.timeLeft, listeners]);
+
   return (
     <TimerContext.Provider
       value={{
@@ -439,7 +526,9 @@ export const TimerProvider: React.FC<{ children: ReactNode }> = ({ children }) =
         updateTreeHealth,
         resetTreeHealth,
         toggleSound,
-        toggleTickSound
+        toggleTickSound,
+        addEventListener,
+        removeEventListener
       }}
     >
       {children}

@@ -1,12 +1,12 @@
-
 import React, { useMemo, useState } from 'react';
 import { Card } from '@/components/ui/card';
 import { useTimer } from '@/contexts/TimerContext';
 import { useTasks } from '@/contexts/TaskContext';
 import { useProcrastination } from '@/contexts/ProcrastinationContext';
 import { format, startOfWeek, endOfWeek, eachDayOfInterval, isSameDay } from 'date-fns';
-import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer } from 'recharts';
+import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, TooltipProps } from 'recharts';
 import { motion, AnimatePresence } from 'framer-motion';
+import { formatHoursToHoursMinutes } from '@/lib/formatters';
 
 const WeeklyReview: React.FC = () => {
   const { state: timerState } = useTimer();
@@ -29,8 +29,9 @@ const WeeklyReview: React.FC = () => {
       ) : [];
       
       // Calculate total focus time in hours
+      // For accurate conversion: milliseconds / (1000 * 60 * 60) = hours
       const focusHours = dayFocusSessions.reduce((total, session) => 
-        total + session.duration / 3600, 0);
+        total + session.duration / (1000 * 60 * 60), 0);
       
       // Count completed tasks for this day
       const completedTasks = tasks ? tasks.filter(task => {
@@ -60,6 +61,20 @@ const WeeklyReview: React.FC = () => {
     }, 300);
     return () => clearTimeout(timer);
   }, []);
+  
+  // Custom tooltip formatter for focus hours
+  const CustomTooltipFormatter = (value: any, name: string) => {
+    if (name === 'Focus Hours') {
+      return [formatHoursToHoursMinutes(Number(value)), name];
+    }
+    return [value, name];
+  };
+  
+  // Custom label formatter for tooltip to show full date
+  const CustomLabelFormatter = (label: string) => {
+    const dayData = weekData.find(day => day.day === label);
+    return dayData ? format(new Date(dayData.fullDate), 'EEEE, MMMM d') : label;
+  };
   
   return (
     <motion.div
@@ -98,6 +113,8 @@ const WeeklyReview: React.FC = () => {
                           boxShadow: '0 4px 12px rgba(0, 0, 0, 0.1)',
                           border: '1px solid rgba(0, 0, 0, 0.1)'
                         }}
+                        formatter={CustomTooltipFormatter}
+                        labelFormatter={CustomLabelFormatter}
                       />
                       <Bar 
                         yAxisId="left" 
@@ -112,11 +129,10 @@ const WeeklyReview: React.FC = () => {
                         yAxisId="right" 
                         dataKey="completedTasks" 
                         fill="#82ca9d" 
-                        name="Tasks"
+                        name="Tasks Completed"
                         radius={[4, 4, 0, 0]}
                         animationDuration={1500}
                         animationEasing="ease-in-out"
-                        animationBegin={300}
                       />
                     </BarChart>
                   </ResponsiveContainer>
@@ -156,6 +172,7 @@ const WeeklyReview: React.FC = () => {
                           boxShadow: '0 4px 12px rgba(0, 0, 0, 0.1)',
                           border: '1px solid rgba(0, 0, 0, 0.1)'
                         }}
+                        labelFormatter={CustomLabelFormatter}
                       />
                       <Bar 
                         dataKey="procrastinationCount" 

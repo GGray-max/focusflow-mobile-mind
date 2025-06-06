@@ -78,7 +78,7 @@ const ReviewPage: React.FC = () => {
             <div className="text-gray-500 text-sm">Total Focus Time</div>
             <div className="text-xl font-semibold flex items-center gap-1 mt-2">
               <Clock size={18} className="text-focus-400" />
-              {Math.round(timerState.totalFocusTime / 60)} hrs
+              {Math.round(timerState.totalFocusTime / (1000 * 60 * 60))} hrs
             </div>
           </motion.div>
           <motion.div 

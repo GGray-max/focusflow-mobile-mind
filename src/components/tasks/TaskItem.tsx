@@ -3,8 +3,11 @@ import React from 'react';
 import { Task } from '@/contexts/TaskContext';
 import { Checkbox } from '@/components/ui/checkbox';
 import { cn } from '@/lib/utils';
-import { Star, ChevronRight, Calendar } from 'lucide-react';
-import { format } from 'date-fns';
+import { Star, ChevronRight, Calendar, Clock, Flame } from 'lucide-react';
+import { format, isSameDay, isToday } from 'date-fns';
+import TaskTimeDisplay from '@/components/task/TaskTimeDisplay';
+import TaskLiveTimer from '@/components/task/TaskLiveTimer';
+import { useTimer } from '@/contexts/TimerContext';
 
 interface TaskItemProps {
   task: Task;
@@ -19,6 +22,13 @@ const TaskItem: React.FC<TaskItemProps> = ({
   onTogglePriority,
   onClick 
 }) => {
+  const { state: timerState } = useTimer();
+  
+  // Check if this task is currently being timed
+  const isBeingTimed = 
+    timerState.isRunning && 
+    timerState.mode === 'focus' && 
+    timerState.currentTaskId === task.id;
   const handleCheckboxClick = (e: React.MouseEvent) => {
     e.stopPropagation();
     onToggleComplete();
@@ -96,6 +106,14 @@ const TaskItem: React.FC<TaskItemProps> = ({
                 {format(new Date(task.dueDate), "MMM d")}
               </p>
             )}
+            
+            {/* Display time spent on task */}
+            {task.totalTimeSpent && task.totalTimeSpent > 0 && (
+              <div className="text-xs text-gray-500 mt-1 flex items-center gap-1">
+                <Clock size={12} className="inline-block text-violet-500" />
+                <TaskTimeDisplay task={task} showLabel={false} />
+              </div>
+            )}
           </div>
         </div>
         
@@ -114,9 +132,29 @@ const TaskItem: React.FC<TaskItemProps> = ({
               )} 
             />
           </button>
-          <div className="flex items-center justify-center h-6 w-6 rounded-full bg-gray-100 dark:bg-gray-700">
-            <ChevronRight size={14} className="text-gray-400" />
-          </div>
+          {/* Show streak indicator for daily repeating tasks */}
+          {task.recurrence === 'daily' && (
+            <div 
+              className="flex items-center justify-center h-6 w-6 rounded-full bg-orange-100 dark:bg-orange-900/30 mr-1"
+              title={`Streak: ${task.streak || 0} ${task.streak === 1 ? 'day' : 'days'}`}
+            >
+              <Flame size={14} className="text-orange-500" />
+              {task.streak > 1 && (
+                <span className="absolute -bottom-1 -right-1 bg-focus-400 text-white text-xs rounded-full h-4 w-4 flex items-center justify-center">
+                  {task.streak}
+                </span>
+              )}
+            </div>
+          )}
+          
+          {/* Show live timer if this task is currently being timed, otherwise show default arrow */}
+          {isBeingTimed ? (
+            <TaskLiveTimer taskId={task.id} />
+          ) : (
+            <div className="flex items-center justify-center h-6 w-6 rounded-full bg-gray-100 dark:bg-gray-700">
+              <ChevronRight size={14} className="text-gray-400" />
+            </div>
+          )}
         </div>
       </div>
     </div>

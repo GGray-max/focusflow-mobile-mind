@@ -22,16 +22,18 @@ const TaskFiltersDialog: React.FC<TaskFiltersDialogProps> = ({ isOpen, onClose }
     state, 
     setFilterCategory, 
     setFilterPriority, 
-    setFilterDueDate 
+    setFilterDueDate,
+    setFilterRecurring
   } = useTasks();
   
-  const { categories, filterCategory, filterPriority, filterDueDate } = state;
+  const { categories, filterCategory, filterPriority, filterDueDate, filterRecurring } = state;
   const selectedDate = filterDueDate ? new Date(filterDueDate) : undefined;
 
   const handleReset = () => {
     setFilterCategory(null);
     setFilterPriority(null);
     setFilterDueDate(null);
+    setFilterRecurring(null);
     onClose();
   };
 
@@ -99,6 +101,28 @@ const TaskFiltersDialog: React.FC<TaskFiltersDialogProps> = ({ isOpen, onClose }
             initial={{ opacity: 0, y: 10 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.2, delay: 0.1 }}
+          >
+            <Label htmlFor="filterRecurring" className="font-medium text-sm">Recurring</Label>
+            <Select 
+              value={filterRecurring || "all"} 
+              onValueChange={(value) => setFilterRecurring(value === "all" ? null : value)}
+            >
+              <SelectTrigger id="filterRecurring" className="border-focus-200 focus:border-focus-400 rounded-lg h-11 transition-all">
+                <SelectValue placeholder="All Tasks" />
+              </SelectTrigger>
+              <SelectContent className="rounded-lg">
+                <SelectItem value="all">All Tasks</SelectItem>
+                <SelectItem value="recurring">Recurring Tasks Only</SelectItem>
+                <SelectItem value="non-recurring">Non-Recurring Tasks Only</SelectItem>
+              </SelectContent>
+            </Select>
+          </motion.div>
+
+          <motion.div 
+            className="space-y-2"
+            initial={{ opacity: 0, y: 10 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.2, delay: 0.15 }}
           >
             <Label className="font-medium text-sm">Due Date</Label>
             <Popover>

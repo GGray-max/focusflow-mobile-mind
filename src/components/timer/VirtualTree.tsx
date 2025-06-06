@@ -64,12 +64,23 @@ const VirtualTree: React.FC = () => {
           key={i}
           initial={{ opacity: 0, scale: 0 }}
           animate={{ 
-            opacity: showGrowthAnimation ? [0, 1, 1] : 1, 
-            scale: showGrowthAnimation ? [0, 1.2, 1] : 1,
-            x: showGrowthAnimation ? [0, x * 1.2, x] : x,
-            y: showGrowthAnimation ? [0, y * 1.2, y] : y
+            opacity: showGrowthAnimation ? 1 : 1, 
+            scale: showGrowthAnimation ? 1 : 1,
+            x: showGrowthAnimation ? x : x,
+            y: showGrowthAnimation ? y : y
           }}
           transition={{ duration: 0.5, delay: i * 0.1 }}
+          // Use a separate animation for growth with tween type
+          {...(showGrowthAnimation && {
+            initial: { opacity: 0, scale: 0, x: 0, y: 0 },
+            animate: { 
+              opacity: [0, 1, 1],
+              scale: [0, 1.2, 1],
+              x: [0, x * 1.2, x],
+              y: [0, y * 1.2, y]
+            },
+            transition: { duration: 0.5, delay: i * 0.1, type: "tween" }
+          })}
           style={{ 
             position: 'absolute',
             transform: `translate(${x}px, ${y}px)`,
@@ -109,14 +120,21 @@ const VirtualTree: React.FC = () => {
           isRunning ? "scale-100" : "scale-90 opacity-80"
         )}
         animate={{ 
-          rotate: isShaking ? [-5, 5, -3, 3, 0] : 0,
-          scale: showGrowthAnimation ? [1, 1.2, 1] : 1
+          // Fixed: Use tween animation type for multiple keyframes
+          rotate: isShaking ? 0 : 0,  // We'll use a separate animate for shake
+          scale: showGrowthAnimation ? 1.1 : 1 // Simplified to one target value
         }}
         transition={{ 
-          duration: isShaking ? 0.5 : 0.3,
+          duration: 0.3,
           type: "spring", 
           stiffness: 300 
         }}
+        // Add a separate animation for the shake effect with tween type
+        {...(isShaking && {
+          initial: { rotate: 0 },
+          animate: { rotate: [0, -5, 5, -3, 3, 0] },
+          transition: { duration: 0.5, type: "tween" }
+        })}
         onClick={handleTreeInteraction}
         whileHover={{ scale: isRunning ? 1.1 : 1 }}
         whileTap={{ scale: isRunning ? 0.95 : 1 }}

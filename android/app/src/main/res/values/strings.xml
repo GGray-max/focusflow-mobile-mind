@@ -1,8 +1,12 @@
-
+<?xml version='1.0' encoding='utf-8'?>
 <resources>
-    <string name="app_name">FocusTask</string>
-    <string name="title_activity_main">FocusTask</string>
-    <string name="package_name">com.focustask.app</string>
-    <string name="custom_url_scheme">com.focustask.app</string>
-    <string name="accessibility_service_description">This service enables app blocking during focus time, helping you stay focused and avoid distractions.</string>
+    <string name="app_name">FocusFlow</string>
+    <string name="title_activity_main">FocusFlow</string>
+    <string name="package_name">com.lovable.focusflow</string>
+    <string name="custom_url_scheme">com.lovable.focusflow</string>
+    
+    <!-- Accessibility Service -->    
+    <string name="accessibility_service_description">FocusFlow uses accessibility services to monitor and block distracting apps during focus sessions. This helps you maintain concentration and improve productivity by preventing interruptions from social media and other distracting applications.</string>
+    <string name="accessibility_service_label">FocusFlow Focus Mode</string>
+    <string name="accessibility_service_summary">Helps block distracting apps during focus sessions</string>
 </resources>

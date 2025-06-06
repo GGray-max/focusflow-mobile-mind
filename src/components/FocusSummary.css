@@ -1,0 +1,60 @@
+.focus-summary-card {
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+  border-radius: 16px;
+  margin: 16px;
+}
+
+.stat-container {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 12px;
+  text-align: center;
+}
+
+.total-time-stat {
+  padding: 16px;
+  margin-bottom: 16px;
+  background-color: rgba(var(--ion-color-primary-rgb), 0.1);
+  border-radius: 12px;
+}
+
+.total-time-stat h2 {
+  margin-top: 8px;
+  font-size: 1.2rem;
+  font-weight: 600;
+  color: var(--ion-color-primary);
+}
+
+.stat-value {
+  font-weight: 700;
+  margin: 8px 0;
+}
+
+.total-time-stat .stat-value {
+  font-size: 1.5rem !important;
+  margin-top: 16px;
+  color: var(--ion-color-dark);
+}
+
+.session-date {
+  margin-left: 16px;
+}
+
+.recent-history h3 {
+  color: var(--ion-color-dark);
+  padding-left: 8px;
+  border-bottom: 1px solid rgba(0, 0, 0, 0.1);
+  padding-bottom: 8px;
+}
+
+@media (prefers-color-scheme: dark) {
+  .total-time-stat {
+    background-color: rgba(var(--ion-color-primary-rgb), 0.2);
+  }
+  
+  .recent-history h3 {
+    border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+  }
+}

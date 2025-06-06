@@ -17,14 +17,17 @@ export interface Task {
   tags: string[];
   subtasks: SubTask[];
   isPriority: boolean;
-  recurrence?: 'none' | 'daily' | 'weekly' | 'monthly'; // New: recurrence property
-  isMonthlyTask?: boolean; // New: flag for monthly task
-  isActive?: boolean; // New: track if recurring task is active
-  lastCompleted?: string; // New: track when recurring task was last completed
-  category?: string; // New: task category
-  startTime?: string; // New: start time for task
-  endTime?: string; // New: end time for task
-  duration?: number; // New: duration in minutes
+  recurrence?: 'none' | 'daily' | 'weekly' | 'monthly'; // Recurrence property
+  isMonthlyTask?: boolean; // Flag for monthly task
+  isActive?: boolean; // Track if recurring task is active
+  lastCompleted?: string; // Track when recurring task was last completed
+  category?: string; // Task category
+  startTime?: string; // Start time for task
+  endTime?: string; // End time for task
+  duration?: number; // Duration in minutes
+  totalTimeSpent?: number; // Accumulated time spent on this task in milliseconds
+  focusSessions?: Array<{ date: string, duration: number }>; // History of focus sessions for this task
+  streak?: number; // Track streak count for daily repeating tasks
 }
 
 export interface SubTask {
@@ -42,6 +45,7 @@ interface TaskState {
   filterCategory: string | null; // New: filter by category
   filterPriority: string | null; // New: filter by priority
   filterDueDate: string | null; // New: filter by due date
+  filterRecurring: string | null; // New: filter by recurring status
   sortBy: 'priority' | 'dueDate' | 'category' | 'createdAt'; // New: sort option
   sortDirection: 'asc' | 'desc'; // New: sort direction
   currentPage: number; // New: current page for pagination
@@ -64,10 +68,12 @@ type TaskAction =
   | { type: 'SET_FILTER_CATEGORY'; payload: string | null }
   | { type: 'SET_FILTER_PRIORITY'; payload: string | null }
   | { type: 'SET_FILTER_DUE_DATE'; payload: string | null }
+  | { type: 'SET_FILTER_RECURRING'; payload: string | null }
   | { type: 'SET_SORT'; payload: { sortBy: 'priority' | 'dueDate' | 'category' | 'createdAt'; direction: 'asc' | 'desc' } }
   | { type: 'SET_PAGE'; payload: number }
   | { type: 'ADD_CATEGORY'; payload: string }
-  | { type: 'UPDATE_CATEGORIES'; payload: string[] };
+  | { type: 'UPDATE_CATEGORIES'; payload: string[] }
+  | { type: 'ADD_FOCUS_TIME'; payload: { taskId: string; duration: number } };
 
 const initialState: TaskState = {
   tasks: [],
@@ -78,6 +84,7 @@ const initialState: TaskState = {
   filterCategory: null,
   filterPriority: null,
   filterDueDate: null,
+  filterRecurring: null,
   sortBy: 'priority',
   sortDirection: 'desc',
   currentPage: 1,
@@ -86,6 +93,30 @@ const initialState: TaskState = {
 
 const taskReducer = (state: TaskState, action: TaskAction): TaskState => {
   switch (action.type) {
+    case 'ADD_FOCUS_TIME':
+      return {
+        ...state,
+        tasks: state.tasks.map((task) => {
+          if (task.id !== action.payload.taskId) return task;
+          
+          // Create a new focus session entry
+          const newSession = {
+            date: new Date().toISOString(),
+            duration: action.payload.duration
+          };
+          
+          // Calculate new total time spent
+          const currentTotal = task.totalTimeSpent || 0;
+          const newTotal = currentTotal + action.payload.duration;
+          
+          // Update the task with the new session and total
+          return {
+            ...task,
+            totalTimeSpent: newTotal,
+            focusSessions: [...(task.focusSessions || []), newSession]
+          };
+        }),
+      };
     case 'ADD_TASK':
       return {
         ...state,
@@ -114,9 +145,20 @@ const taskReducer = (state: TaskState, action: TaskAction): TaskState => {
           
           // Handle recurring tasks
           if (task.recurrence && task.recurrence !== 'none' && newCompletedStatus) {
-            // For recurring tasks, we don't mark as completed but record last completion
+            // For recurring tasks that aren't daily, we don't mark as completed but record last completion
+            if (task.recurrence !== 'daily') {
+              return {
+                ...task,
+                lastCompleted: now,
+              };
+            }
+            
+            // For daily tasks, we need to handle the streak logic
+            // This is a simplified version; the full streak logic is in the toggleComplete method
             return {
               ...task,
+              completed: newCompletedStatus,
+              completedAt: now,
               lastCompleted: now,
             };
           }
@@ -225,6 +267,13 @@ const taskReducer = (state: TaskState, action: TaskAction): TaskState => {
         filterDueDate: action.payload,
         currentPage: 1 // Reset to first page when filtering
       };
+      
+    case 'SET_FILTER_RECURRING':
+      return {
+        ...state,
+        filterRecurring: action.payload,
+        currentPage: 1 // Reset to first page when filtering
+      };
     case 'SET_SORT':
       return {
         ...state,
@@ -254,7 +303,7 @@ const taskReducer = (state: TaskState, action: TaskAction): TaskState => {
   }
 };
 
-type TaskContextType = {
+interface TaskContextType {
   state: TaskState;
   addTask: (task: Omit<Task, 'id' | 'createdAt'>) => Promise<void>;
   updateTask: (task: Task) => void;
@@ -269,12 +318,16 @@ type TaskContextType = {
   setFilterCategory: (category: string | null) => void;
   setFilterPriority: (priority: string | null) => void;
   setFilterDueDate: (date: string | null) => void;
+  setFilterRecurring: (recurring: string | null) => void;
   setSort: (sortBy: 'priority' | 'dueDate' | 'category' | 'createdAt', direction: 'asc' | 'desc') => void;
   setPage: (page: number) => void;
   addCategory: (category: string) => void;
   getFilteredAndSortedTasks: () => Task[];
   getPaginatedTasks: () => Task[];
   getTotalPages: () => number;
+  addFocusTime: (taskId: string, duration: number) => void;
+  getTask: (taskId: string) => Task | undefined;
+  resetTaskTime: (taskId: string) => void;
 };
 
 const TaskContext = createContext<TaskContextType | undefined>(undefined);
@@ -283,22 +336,87 @@ export const TaskProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
   const [state, dispatch] = useReducer(taskReducer, initialState);
 
   useEffect(() => {
-    const loadTasks = async () => {
+    const loadTasks = () => {
       try {
-        const savedTasks = localStorage.getItem('tasks');
-        if (savedTasks) {
-          dispatch({ type: 'LOAD_TASKS', payload: JSON.parse(savedTasks) });
+        // Check if localStorage is available
+        if (typeof localStorage === 'undefined') {
+          console.info('localStorage not available, using default empty tasks');
+          dispatch({ type: 'LOAD_TASKS', payload: [] });
+          dispatch({ type: 'SET_ERROR', payload: null });
+          return;
+        }
+
+        // Try to load tasks from localStorage
+        const storedTasks = localStorage.getItem('tasks');
+        if (storedTasks) {
+          try {
+            // Parse tasks with error handling
+            const parsedTasks = JSON.parse(storedTasks);
+            // Validate that parsed data is an array
+            if (Array.isArray(parsedTasks)) {
+              dispatch({ type: 'LOAD_TASKS', payload: parsedTasks });
+            } else {
+              console.error('Stored tasks is not an array, using default empty tasks');
+              dispatch({ type: 'LOAD_TASKS', payload: [] });
+            }
+          } catch (parseError) {
+            console.error('Error parsing stored tasks:', parseError);
+            dispatch({ type: 'LOAD_TASKS', payload: [] });
+          }
         } else {
+          // No tasks found in storage
           dispatch({ type: 'LOAD_TASKS', payload: [] });
         }
+        dispatch({ type: 'SET_ERROR', payload: null });
       } catch (error) {
-        console.error("Failed to load tasks:", error);
+        console.error('Error loading tasks:', error);
+        dispatch({ type: 'LOAD_TASKS', payload: [] }); // Ensure we always have a valid task array
         dispatch({ type: 'SET_ERROR', payload: 'Failed to load tasks' });
+      } finally {
+        setTimeout(() => dispatch({ type: 'SET_LOADING', payload: false }), 500);
       }
     };
 
     loadTasks();
   }, []);
+
+  useEffect(() => {
+    // Check for streaks that need to be updated
+    const checkAndUpdateStreaks = () => {
+      const today = new Date();
+      today.setHours(0, 0, 0, 0);
+      
+      // Calculate the date for two days ago
+      const twoDaysAgo = new Date(today);
+      twoDaysAgo.setDate(twoDaysAgo.getDate() - 2);
+      
+      // Find all daily recurring tasks
+      const dailyTasks = state.tasks.filter(task => task.recurrence === 'daily' && task.streak);
+      
+      // Check each task to see if streak needs to be reset
+      dailyTasks.forEach(task => {
+        if (task.lastCompleted) {
+          const lastCompletedDate = new Date(task.lastCompleted);
+          lastCompletedDate.setHours(0, 0, 0, 0);
+          
+          // If the task hasn't been completed since 2 days ago, reset streak
+          if (lastCompletedDate.getTime() <= twoDaysAgo.getTime()) {
+            const updatedTask = {
+              ...task,
+              streak: 0 // Reset streak to 0
+            };
+            
+            updateTask(updatedTask);
+          }
+        }
+      });
+    };
+    
+    // Only run this if tasks have been loaded
+    if (state.tasks.length > 0) {
+      checkAndUpdateStreaks();
+    }
+  }, [state.tasks.length]); // Re-run when tasks length changes (i.e., when tasks are loaded)
 
   // Save tasks to localStorage whenever they change
   useEffect(() => {
@@ -395,6 +513,51 @@ export const TaskProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     
     if (!task) return;
     
+    // Handle streak tracking for daily recurring tasks
+    if (task.recurrence === 'daily') {
+      // Get current date (midnight for comparison)
+      const today = new Date();
+      today.setHours(0, 0, 0, 0);
+      
+      // Check if the task is being completed or uncompleted
+      if (!task.completed) {
+        // Task is being completed - update streak
+        const lastCompletedDate = task.lastCompleted ? new Date(task.lastCompleted) : null;
+        if (lastCompletedDate) {
+          lastCompletedDate.setHours(0, 0, 0, 0);
+        }
+        
+        // Calculate the date of yesterday
+        const yesterday = new Date(today);
+        yesterday.setDate(yesterday.getDate() - 1);
+        
+        let newStreak = task.streak || 0;
+        
+        // If last completed date was yesterday, increment streak
+        if (lastCompletedDate && lastCompletedDate.getTime() === yesterday.getTime()) {
+          newStreak += 1;
+        } 
+        // If it wasn't completed yesterday (or ever), reset streak to 1
+        else {
+          newStreak = 1;
+        }
+        
+        // Update the task with new streak and lastCompleted date
+        const updatedTask = {
+          ...task,
+          streak: newStreak,
+          lastCompleted: today.toISOString(),
+          completed: true,
+          completedAt: new Date().toISOString()
+        };
+        
+        // Update the task instead of just toggling completion
+        updateTask(updatedTask);
+        return; // Early return since we're handling the update
+      }
+    }
+    
+    // Default behavior for non-daily tasks or uncompleting tasks
     dispatch({ type: 'TOGGLE_COMPLETE', payload: id });
     
     // If completing a non-recurring task, cancel any notifications
@@ -449,6 +612,10 @@ export const TaskProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
   const setFilterDueDate = (date: string | null) => {
     dispatch({ type: 'SET_FILTER_DUE_DATE', payload: date });
   };
+  
+  const setFilterRecurring = (recurring: string | null) => {
+    dispatch({ type: 'SET_FILTER_RECURRING', payload: recurring });
+  };
 
   const setSort = (sortBy: 'priority' | 'dueDate' | 'category' | 'createdAt', direction: 'asc' | 'desc') => {
     dispatch({ type: 'SET_SORT', payload: { sortBy, direction } });
@@ -482,6 +649,19 @@ export const TaskProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     // Apply priority filter
     if (state.filterPriority) {
       filteredTasks = filteredTasks.filter(task => task.priority === state.filterPriority);
+    }
+    
+    // Apply recurring filter
+    if (state.filterRecurring) {
+      if (state.filterRecurring === 'recurring') {
+        filteredTasks = filteredTasks.filter(task => 
+          task.recurrence && task.recurrence !== 'none'
+        );
+      } else if (state.filterRecurring === 'non-recurring') {
+        filteredTasks = filteredTasks.filter(task => 
+          !task.recurrence || task.recurrence === 'none'
+        );
+      }
     }
     
     // Apply due date filter
@@ -551,6 +731,29 @@ export const TaskProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     return Math.ceil(filteredAndSorted.length / state.tasksPerPage);
   };
 
+  // Add focus time to a specific task
+  const addFocusTime = (taskId: string, duration: number) => {
+    dispatch({ type: 'ADD_FOCUS_TIME', payload: { taskId, duration } });
+  };
+  
+  // Get a task by its ID
+  const getTask = (taskId: string) => {
+    return state.tasks.find(task => task.id === taskId);
+  };
+  
+  // Reset a task's accumulated time
+  const resetTaskTime = (taskId: string) => {
+    const task = getTask(taskId);
+    if (task) {
+      const updatedTask = {
+        ...task,
+        totalTimeSpent: 0,
+        focusSessions: []
+      };
+      updateTask(updatedTask);
+    }
+  };
+  
   return (
     <TaskContext.Provider
       value={{
@@ -568,12 +771,16 @@ export const TaskProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
         setFilterCategory,
         setFilterPriority,
         setFilterDueDate,
+        setFilterRecurring,
         setSort,
         setPage,
         addCategory,
         getFilteredAndSortedTasks,
         getPaginatedTasks,
-        getTotalPages
+        getTotalPages,
+        addFocusTime,
+        getTask,
+        resetTaskTime
       }}
     >
       {children}

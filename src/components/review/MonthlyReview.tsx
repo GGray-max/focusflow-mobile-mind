@@ -1,4 +1,3 @@
-
 import React, { useMemo, useState } from 'react';
 import { Card } from '@/components/ui/card';
 import { useTimer } from '@/contexts/TimerContext';
@@ -7,6 +6,7 @@ import { useProcrastination } from '@/contexts/ProcrastinationContext';
 import { format, startOfMonth, endOfMonth, eachWeekOfInterval, startOfWeek, endOfWeek, isSameDay, isWithinInterval } from 'date-fns';
 import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, PieChart, Pie, Cell, Legend } from 'recharts';
 import { motion, AnimatePresence } from 'framer-motion';
+import { formatHoursToHoursMinutes } from '@/lib/formatters';
 
 const MonthlyReview: React.FC = () => {
   const { state: timerState } = useTimer();
@@ -46,7 +46,7 @@ const MonthlyReview: React.FC = () => {
               const sessionDate = new Date(session.date);
               return isWithinInterval(sessionDate, { start: weekStart, end: weekEnd });
             })
-            .reduce((total, session) => total + session.duration / 3600, 0)
+            .reduce((total, session) => total + session.duration / (1000 * 60 * 60), 0)
         : 0;
       
       // Count completed tasks for the week
@@ -117,6 +117,11 @@ const MonthlyReview: React.FC = () => {
   
   const COLORS = ['#8884d8', '#82ca9d', '#ffc658', '#ff7300', '#0088fe'];
   
+  // Get total focus hours for the month
+  const totalFocusHours = useMemo(() => {
+    return monthData.reduce((total, week) => total + week.focusHours, 0);
+  }, [monthData]);
+  
   return (
     <motion.div
       className="space-y-6 mt-4"
@@ -154,7 +159,12 @@ const MonthlyReview: React.FC = () => {
                           boxShadow: '0 4px 12px rgba(0, 0, 0, 0.1)',
                           border: '1px solid rgba(0, 0, 0, 0.1)'
                         }}
-                        formatter={(value, name) => [value, name === 'focusHours' ? 'Focus Hours' : 'Tasks Completed']}
+                        formatter={(value, name) => {
+                          if (name === 'Focus Hours') {
+                            return [formatHoursToHoursMinutes(Number(value)), name];
+                          }
+                          return [value, name];
+                        }}
                         labelFormatter={(label) => {
                           const item = monthData.find(d => d.week === label);
                           return item ? item.weekRange : label;
@@ -177,7 +187,6 @@ const MonthlyReview: React.FC = () => {
                         radius={[4, 4, 0, 0]}
                         animationDuration={1500}
                         animationEasing="ease-in-out"
-                        animationBegin={300}
                       />
                     </BarChart>
                   </ResponsiveContainer>
@@ -193,56 +202,53 @@ const MonthlyReview: React.FC = () => {
         animate={{ y: 0, opacity: 1 }}
         transition={{ duration: 0.5, delay: 0.4 }}
       >
-        <Card className="p-4 overflow-hidden">
-          <h3 className="text-md font-medium mb-4">Tasks Completed by Category</h3>
-          <div className="h-64">
-            {tasksByCategory.length > 0 ? (
-              <AnimatePresence>
-                {chartLoaded && (
-                  <motion.div 
-                    className="h-full w-full"
-                    initial={{ opacity: 0, scale: 0.9 }}
-                    animate={{ opacity: 1, scale: 1 }}
-                    transition={{ duration: 0.5 }}
-                  >
-                    <ResponsiveContainer width="100%" height="100%">
-                      <PieChart>
-                        <Pie
-                          data={tasksByCategory}
-                          cx="50%"
-                          cy="50%"
-                          labelLine={false}
-                          outerRadius={80}
-                          fill="#8884d8"
-                          dataKey="value"
-                          label={({ name, percent }) => `${name} ${(percent * 100).toFixed(0)}%`}
-                          animationBegin={400}
-                          animationDuration={1500}
-                          animationEasing="ease-out"
-                        >
-                          {tasksByCategory.map((entry, index) => (
-                            <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
-                          ))}
-                        </Pie>
-                        <Legend />
-                        <Tooltip 
-                          formatter={(value) => [`${value} tasks`, 'Completed']}
-                          contentStyle={{ 
-                            borderRadius: '8px',
-                            boxShadow: '0 4px 12px rgba(0, 0, 0, 0.1)',
-                            border: '1px solid rgba(0, 0, 0, 0.1)'
-                          }}
-                        />
-                      </PieChart>
-                    </ResponsiveContainer>
-                  </motion.div>
-                )}
-              </AnimatePresence>
-            ) : (
-              <div className="h-full flex items-center justify-center">
-                <p className="text-gray-500">No completed tasks this month</p>
-              </div>
-            )}
+        <Card className="p-4">
+          <h3 className="text-md font-medium mb-4">Task Categories</h3>
+          <div className="h-60">
+            <AnimatePresence>
+              {chartLoaded && tasksByCategory.length > 0 && (
+                <motion.div 
+                  className="h-full w-full"
+                  initial={{ opacity: 0, scale: 0.9 }}
+                  animate={{ opacity: 1, scale: 1 }}
+                  transition={{ duration: 0.5 }}
+                >
+                  <ResponsiveContainer width="100%" height="100%">
+                    <PieChart>
+                      <Pie
+                        data={tasksByCategory}
+                        cx="50%"
+                        cy="50%"
+                        labelLine={false}
+                        outerRadius={80}
+                        fill="#8884d8"
+                        dataKey="value"
+                        nameKey="name"
+                        label={({ name, percent }) => `${name}: ${(percent * 100).toFixed(0)}%`}
+                      >
+                        {tasksByCategory.map((entry, index) => (
+                          <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
+                        ))}
+                      </Pie>
+                      <Legend layout="horizontal" verticalAlign="bottom" align="center" />
+                      <Tooltip 
+                        formatter={(value) => [`${value} tasks`, '']}
+                        contentStyle={{ 
+                          borderRadius: '8px',
+                          boxShadow: '0 4px 12px rgba(0, 0, 0, 0.1)',
+                          border: '1px solid rgba(0, 0, 0, 0.1)'
+                        }}
+                      />
+                    </PieChart>
+                  </ResponsiveContainer>
+                </motion.div>
+              )}
+              {chartLoaded && tasksByCategory.length === 0 && (
+                <div className="h-full flex items-center justify-center">
+                  <p className="text-gray-500">No completed tasks this month</p>
+                </div>
+              )}
+            </AnimatePresence>
           </div>
         </Card>
       </motion.div>
@@ -252,8 +258,8 @@ const MonthlyReview: React.FC = () => {
         animate={{ y: 0, opacity: 1 }}
         transition={{ duration: 0.5, delay: 0.6 }}
       >
-        <Card className="p-4 overflow-hidden">
-          <h3 className="text-md font-medium mb-4">Procrastination Trends</h3>
+        <Card className="p-4">
+          <h3 className="text-md font-medium mb-4">Procrastination Insights</h3>
           <div className="h-48">
             <AnimatePresence>
               {chartLoaded && (
@@ -314,7 +320,7 @@ const MonthlyReview: React.FC = () => {
             >
               <p className="text-gray-500 text-sm">Total Focus Hours</p>
               <p className="text-2xl font-bold">
-                {monthData.reduce((total, week) => total + week.focusHours, 0).toFixed(1)}
+                {formatHoursToHoursMinutes(totalFocusHours)}
               </p>
             </motion.div>
             <motion.div 

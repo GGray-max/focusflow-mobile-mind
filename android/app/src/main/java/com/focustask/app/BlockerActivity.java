@@ -11,6 +11,9 @@ import android.widget.TextView;
 
 import androidx.appcompat.app.AppCompatActivity;
 
+import com.stanley.focusflow.MainActivity;
+import com.stanley.focusflow.R;
+
 public class BlockerActivity extends AppCompatActivity {
     
     private String blockedApp;

@@ -4,7 +4,7 @@ import MobileLayout from '@/components/layout/MobileLayout';
 import { Button } from '@/components/ui/button';
 import { Label } from '@/components/ui/label';
 import { Switch } from '@/components/ui/switch';
-import { Trash2, Download, Share2, Moon, Sun } from 'lucide-react';
+import { Trash2, Download, Share2, Moon, Sun, Target, Sparkles } from 'lucide-react';
 import CustomSoundSelector from '@/components/CustomSoundSelector';
 import { Dialog, DialogTrigger, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from '@/components/ui/dialog';
 import { useTimer } from '@/contexts/TimerContext';
@@ -22,6 +22,14 @@ const SettingsPage: React.FC = () => {
     return localStorage.getItem('darkMode') === 'true' || 
            (!('darkMode' in localStorage) && 
             window.matchMedia('(prefers-color-scheme: dark)').matches);
+  });
+  
+  // Vision Board settings
+  const [showMotivationalReminders, setShowMotivationalReminders] = React.useState(() => {
+    return localStorage.getItem('showMotivationalReminders') !== 'false'; // Default to true
+  });
+  const [showMotivationOnStartup, setShowMotivationOnStartup] = React.useState(() => {
+    return localStorage.getItem('showMotivationOnStartup') !== 'false'; // Default to true
   });
   
   const { resetTimer } = useTimer();
@@ -52,6 +60,28 @@ const SettingsPage: React.FC = () => {
     toast({
       title: newMode ? "Dark mode enabled" : "Light mode enabled",
       description: "Your theme preference has been saved",
+    });
+  };
+  
+  const toggleMotivationalReminders = () => {
+    const newValue = !showMotivationalReminders;
+    setShowMotivationalReminders(newValue);
+    localStorage.setItem('showMotivationalReminders', newValue.toString());
+    
+    toast({
+      title: newValue ? "Motivational reminders enabled" : "Motivational reminders disabled",
+      description: "Your preference has been saved",
+    });
+  };
+  
+  const toggleMotivationOnStartup = () => {
+    const newValue = !showMotivationOnStartup;
+    setShowMotivationOnStartup(newValue);
+    localStorage.setItem('showMotivationOnStartup', newValue.toString());
+    
+    toast({
+      title: newValue ? "Startup quotes enabled" : "Startup quotes disabled",
+      description: "Your preference has been saved",
     });
   };
   
@@ -260,6 +290,51 @@ const SettingsPage: React.FC = () => {
                   </DialogFooter>
                 </DialogContent>
               </Dialog>
+            </CardContent>
+          </Card>
+        </motion.div>
+        
+        <motion.div variants={item}>
+          <Card className="overflow-hidden border border-gray-100 dark:border-gray-800 bg-white/80 dark:bg-gray-800/90 backdrop-blur-sm shadow-md hover:shadow-lg transition-all">
+            <CardHeader>
+              <CardTitle className="text-lg font-medium">Vision Board Settings</CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <div className="space-y-4">
+                <div className="flex items-center justify-between p-2 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700/50 transition-colors">
+                  <div className="flex-1">
+                    <Label htmlFor="motivationalReminders" className="cursor-pointer flex items-center gap-2">
+                      <Sparkles size={16} className="text-amber-400" />
+                      Daily Motivational Reminders
+                    </Label>
+                    <p className="text-xs text-gray-500 dark:text-gray-400 mt-1 ml-6">
+                      Show a daily quote from your vision board on the dashboard
+                    </p>
+                  </div>
+                  <Switch 
+                    id="motivationalReminders" 
+                    checked={showMotivationalReminders} 
+                    onCheckedChange={toggleMotivationalReminders}
+                  />
+                </div>
+                
+                <div className="flex items-center justify-between p-2 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700/50 transition-colors">
+                  <div className="flex-1">
+                    <Label htmlFor="motivationStartup" className="cursor-pointer flex items-center gap-2">
+                      <Target size={16} className="text-focus-400" />
+                      Startup Motivation
+                    </Label>
+                    <p className="text-xs text-gray-500 dark:text-gray-400 mt-1 ml-6">
+                      Show a motivational quote when the app launches
+                    </p>
+                  </div>
+                  <Switch 
+                    id="motivationStartup" 
+                    checked={showMotivationOnStartup} 
+                    onCheckedChange={toggleMotivationOnStartup}
+                  />
+                </div>
+              </div>
             </CardContent>
           </Card>
         </motion.div>
