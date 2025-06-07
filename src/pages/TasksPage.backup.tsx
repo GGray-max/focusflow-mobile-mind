@@ -1,3 +1,4 @@
+
 import React, { useState } from 'react';
 import MobileLayout from '@/components/layout/MobileLayout';
 import { Button } from '@/components/ui/button';
@@ -17,7 +18,7 @@ import SpeechRecognition from '@/components/tasks/SpeechRecognition';
 import CalendarView from '@/components/tasks/CalendarView';
 import FreeTimeAnalysis from '@/components/tasks/FreeTimeAnalysis';
 import DailyMotivation from '@/components/vision/DailyMotivation';
-import { toast } from '@/components/ui/use-toast';
+import { toast } from '@/hooks/use-toast';
 
 const TasksPage: React.FC = () => {
   const [isAddTaskDialogOpen, setIsAddTaskDialogOpen] = useState(false);
@@ -92,7 +93,7 @@ const TasksPage: React.FC = () => {
     !task.completed
   );
   
-  const completedTasks = allTasks.filter(task => task.completed);
+  const completedTasksFiltered = allTasks.filter(task => task.completed);
   
   // Get tasks for the active tab
   const getTasksForActiveTab = () => {
@@ -104,7 +105,7 @@ const TasksPage: React.FC = () => {
       case 'all':
         return allTasks.filter(task => !task.completed);
       case 'completed':
-        return completedTasks;
+        return completedTasksFiltered;
       default:
         return [];
     }
@@ -265,25 +266,75 @@ const TasksPage: React.FC = () => {
           </Button>
         </div>
         
-        {
-          <Tabs defaultValue="active" className="w-full">
-            <TabsList className="grid w-full grid-cols-2 rounded-lg bg-muted mb-4 h-auto py-1">
-              <TabsTrigger 
-                value="active" 
-                className="data-[state=active]:bg-white dark:data-[state=active]:bg-gray-800 data-[state=active]:shadow-sm rounded-md text-xs sm:text-sm py-1.5"
-              >
-                Active ({incompleteTasks.length})
-              </TabsTrigger>
-              <TabsTrigger 
-                value="completed" 
-                className="data-[state=active]:bg-white dark:data-[state=active]:bg-gray-800 data-[state=active]:shadow-sm rounded-md text-xs sm:text-sm py-1.5"
-              >
-                Completed ({completedTasks.length})
-              </TabsTrigger>
-            </TabsList>
-            
-            <TabsContent value="active" className="mt-0">
-              {loading ? (
+        <Tabs defaultValue="active" className="w-full">
+          <TabsList className="grid w-full grid-cols-2 rounded-lg bg-muted mb-4 h-auto py-1">
+            <TabsTrigger 
+              value="active" 
+              className="data-[state=active]:bg-white dark:data-[state=active]:bg-gray-800 data-[state=active]:shadow-sm rounded-md text-xs sm:text-sm py-1.5"
+            >
+              Active ({incompleteTasks.length})
+            </TabsTrigger>
+            <TabsTrigger 
+              value="completed" 
+              className="data-[state=active]:bg-white dark:data-[state=active]:bg-gray-800 data-[state=active]:shadow-sm rounded-md text-xs sm:text-sm py-1.5"
+            >
+              Completed ({completedTasks.length})
+            </TabsTrigger>
+          </TabsList>
+          
+          <TabsContent value="active" className="mt-0">
+            {loading ? (
+              <div className="text-center py-8">Loading tasks...</div>
+            ) : (
+              <div className="space-y-2">
+                {paginatedTasks.length === 0 ? (
+                  <div className="text-center py-8 text-muted-foreground">
+                    No tasks found
+                  </div>
+                ) : (
+                  paginatedTasks.map((task) => (
+                    <TaskItem
+                      key={task.id}
+                      task={task}
+                      onComplete={() => toggleComplete(task.id)}
+                      onPriority={() => togglePriority(task.id)}
+                      onClick={() => setSelectedTask(task)}
+                    />
+                  ))
+                )}
+              </div>
+            )}
+          </TabsContent>
+          
+          <TabsContent value="completed" className="mt-0">
+            <div className="space-y-2">
+              {completedTasks.length === 0 ? (
+                <div className="text-center py-8 text-muted-foreground">
+                  No completed tasks
+                </div>
+              ) : (
+                completedTasks.map((task) => (
+                  <TaskItem
+                    key={task.id}
+                    task={task}
+                    onComplete={() => toggleComplete(task.id)}
+                    onPriority={() => togglePriority(task.id)}
+                    onClick={() => setSelectedTask(task)}
+                  />
+                ))
+              )}
+            </div>
+          </TabsContent>
+        </Tabs>
+      </div>
+      
+      <AddTaskDialog
+        isOpen={isAddTaskDialogOpen}
+        onClose={() => setIsAddTaskDialogOpen(false)}
+      />
+      
+      <TaskDetailDialog
+        task={selectedTask}
         isOpen={!!selectedTask} 
         onClose={() => setSelectedTask(null)} 
       />
