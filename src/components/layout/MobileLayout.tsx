@@ -1,8 +1,8 @@
-
 import React, { ReactNode } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { AnimatePresence, motion } from 'framer-motion';
 import { ListTodo, Clock, BarChart, Settings, PieChart, Calendar, Target } from 'lucide-react';
+import { useTheme } from '../../contexts/ThemeContext';
 
 interface MobileLayoutProps {
   children: ReactNode;
@@ -11,6 +11,7 @@ interface MobileLayoutProps {
 const MobileLayout: React.FC<MobileLayoutProps> = ({ children }) => {
   const navigate = useNavigate();
   const location = useLocation();
+  const { theme } = useTheme();
 
   // Navigation items
   const navItems = [
@@ -24,9 +25,9 @@ const MobileLayout: React.FC<MobileLayoutProps> = ({ children }) => {
   ];
 
   return (
-    <div className="max-w-md mx-auto min-h-screen flex flex-col bg-background">
+    <div className="w-full min-h-screen flex flex-col bg-background mx-0 px-0 transition-colors duration-300" data-theme={theme}>
       {/* Main content with improved scrolling and padding */}
-      <main className="flex-1 px-4 sm:px-6 pb-24 md:pb-28 overflow-y-auto">
+      <main className="flex-1 px-4 sm:px-6 pb-24 md:pb-28 overflow-y-auto mx-0" data-theme={theme}>
         <AnimatePresence mode="wait">
           <motion.div
             key={location.pathname}
@@ -34,7 +35,7 @@ const MobileLayout: React.FC<MobileLayoutProps> = ({ children }) => {
             animate={{ opacity: 1, y: 0 }}
             exit={{ opacity: 0, y: -10 }}
             transition={{ duration: 0.3, ease: "easeInOut" }}
-            className="h-full pt-4 sm:pt-6"
+            className="h-full pt-4 sm:pt-6 w-full"
           >
             {children}
           </motion.div>
@@ -42,19 +43,19 @@ const MobileLayout: React.FC<MobileLayoutProps> = ({ children }) => {
       </main>
       
       {/* Responsive bottom navigation bar */}
-      <nav className="fixed bottom-0 left-0 right-0 bg-white dark:bg-gray-900 border-t border-gray-200 dark:border-gray-800 px-2 sm:px-4 py-2 z-10 shadow-[0_-1px_3px_rgba(0,0,0,0.05)]">
-        <div className="max-w-md mx-auto overflow-x-auto scrollbar-hide">
-          <div className="flex justify-between min-w-max">
+      <nav className="fixed bottom-0 left-0 right-0 bg-white border-t border-gray-200 px-2 sm:px-4 py-2 z-10 shadow-[0_-1px_3px_rgba(0,0,0,0.05)] w-full mx-0 transition-colors duration-300" data-theme={theme}>
+        <div className="w-full mx-auto overflow-x-auto scrollbar-hide">
+          <div className="flex justify-between w-full min-w-0">
             {navItems.map(({ path, Icon, label }) => {
               const isActive = location.pathname === path;
               return (
                 <button
                   key={path}
-                  className={`flex flex-col items-center justify-center px-2 sm:px-3 py-1 sm:py-2 relative min-w-[3rem] sm:min-w-[3.5rem] ${
+                  className={`flex flex-col items-center justify-center px-2 sm:px-3 py-1 sm:py-2 relative min-w-0 w-full sm:min-w-[3.5rem] ${
                     isActive 
                       ? 'text-focus-400'
-                      : 'text-gray-500 hover:text-gray-800 dark:hover:text-gray-300'
-                  }`}
+                      : 'text-gray-500 hover:text-gray-800'
+                  } transition-colors duration-300`}
                   onClick={() => navigate(path)}
                   aria-label={label}
                 >
@@ -70,7 +71,7 @@ const MobileLayout: React.FC<MobileLayoutProps> = ({ children }) => {
                     size={20} 
                     className={isActive ? 'animate-pulse-gentle' : 'transition-transform group-hover:scale-105'} 
                   />
-                  <span className="text-[0.65rem] sm:text-xs mt-1 font-medium truncate max-w-[4rem]">{label}</span>
+                  <span className="text-[0.6rem] sm:text-xs mt-1 font-medium truncate max-w-full sm:max-w-[4rem]">{label}</span>
                 </button>
               );
             })}

@@ -166,10 +166,10 @@ const TaskDetailDialog: React.FC<TaskDetailDialogProps> = ({ task, isOpen, onClo
 
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
-      <DialogContent className="sm:max-w-[425px] md:max-w-[600px] max-h-[80vh] overflow-y-auto bg-white dark:bg-gray-800 rounded-xl shadow-xl p-0 flex flex-col">
-        <DialogTitle>Task Details - {task.title}</DialogTitle>
-        <DialogHeader className="sticky top-0 z-10 bg-background pt-4 pb-2">
-          <DialogTitle className="flex items-center justify-between">
+      <DialogContent className="sm:max-w-[425px] md:max-w-[600px] max-h-[80vh] overflow-y-auto bg-white dark:bg-card rounded-2xl shadow-xl p-6 flex flex-col space-y-4">
+        <DialogTitle className="text-lg font-semibold text-gray-900 dark:text-white">Task Details - {task.title}</DialogTitle>
+        <DialogHeader className="sticky top-0 z-10 bg-white dark:bg-card px-6 pt-6 pb-4">
+          <DialogTitle className="flex items-center justify-between text-lg font-semibold text-gray-900 dark:text-white">
             <div className="flex items-center gap-3">
               <Checkbox 
                 checked={task.completed} 

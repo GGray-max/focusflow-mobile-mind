@@ -1,4 +1,3 @@
-
 import { LocalNotifications, ScheduleOptions, ActionPerformed, Channel, LocalNotificationsPlugin } from '@capacitor/local-notifications';
 import { Capacitor } from '@capacitor/core';
 import { Filesystem, Directory } from '@capacitor/filesystem';
@@ -25,6 +24,16 @@ class NotificationService {
       sound: 'timer-complete.mp3',
       vibration: true,
       lights: true
+    },
+    {
+      id: 'urgent-notifications',
+      name: 'Urgent Notifications',
+      description: 'Notifications for urgent reminders',
+      importance: 5, // High importance
+      visibility: 1, // Public
+      sound: 'urgent.wav',
+      vibration: true,
+      lights: true
     }
   ];
 
@@ -39,6 +48,7 @@ class NotificationService {
         // Create channels with default sounds first
         await LocalNotifications.createChannel(this.channels[0]);
         await LocalNotifications.createChannel(this.channels[1]);
+        await LocalNotifications.createChannel(this.channels[2]);
         console.log('Notification channels created');
         
         // After creating channels, check if we have custom sounds
@@ -126,16 +136,15 @@ class NotificationService {
     }
   }
 
-  async scheduleTaskNotification(taskId: string, title: string, body: string, scheduledTime: Date) {
+  async scheduleTaskNotification(taskId: string, title: string, body: string, scheduledTime: Date, isUrgent: boolean = false): Promise<void> {
     const hasPermission = await this.requestPermissions();
     
     if (!hasPermission) {
       console.warn('Notification permission not granted');
-      return false;
+      return;
     }
     
-    // Determine which sound to use (custom or default)
-    const hasCustomSound = localStorage.getItem('customTaskSound') !== null;
+    const useUrgentStyle = isUrgent && localStorage.getItem('urgentNotifications') === 'true';
     
     try {
       // Calculate a numeric id from the taskId string (must be an integer)
@@ -160,21 +169,21 @@ class NotificationService {
               allowWhileIdle: true, // Ensure delivery even in doze mode
               repeats: false // One-time notification
             },
-            sound: hasCustomSound ? 'custom-task-sound.mp3' : 'beep.wav',
+            sound: useUrgentStyle ? 'urgent.wav' : localStorage.getItem('customTaskSound') ? 'custom-task-sound.mp3' : 'beep.wav',
             smallIcon: 'ic_stat_focus_brain',
             iconColor: '#8B5CF6',
-            channelId: 'task-notifications',
+            channelId: useUrgentStyle ? 'urgent-notifications' : 'task-notifications',
             autoCancel: true,
             ongoing: false,
             extra: {
-              taskId: taskId
+              taskId: taskId,
+              isUrgent: useUrgentStyle
             }
           }
         ]
       });
       
-      console.log(`Notification scheduled for task ${taskId} at ${notificationTime.toISOString()}`);
-      return true;
+      console.log(`Scheduled ${useUrgentStyle ? 'urgent ' : ''}task notification for task ${taskId} at ${notificationTime.toISOString()}`);
     } catch (error) {
       console.error('Error scheduling notification:', error);
       toast({
@@ -182,7 +191,6 @@ class NotificationService {
         description: "There was an error scheduling your task notification.",
         variant: "destructive"
       });
-      return false;
     }
   }
 

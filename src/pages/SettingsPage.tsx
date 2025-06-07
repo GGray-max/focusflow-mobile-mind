@@ -1,10 +1,9 @@
-
-import React, { useEffect } from 'react';
+import React, { useEffect, useState } from 'react';
 import MobileLayout from '@/components/layout/MobileLayout';
 import { Button } from '@/components/ui/button';
 import { Label } from '@/components/ui/label';
 import { Switch } from '@/components/ui/switch';
-import { Trash2, Download, Share2, Moon, Sun, Target, Sparkles } from 'lucide-react';
+import { Trash2, Download, Share2, Moon, Sun, Target, Sparkles, Palette } from 'lucide-react';
 import CustomSoundSelector from '@/components/CustomSoundSelector';
 import { Dialog, DialogTrigger, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from '@/components/ui/dialog';
 import { useTimer } from '@/contexts/TimerContext';
@@ -14,6 +13,8 @@ import { toast } from '@/components/ui/use-toast';
 import NotificationService from '@/services/NotificationService';
 import { motion } from 'framer-motion';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
+import { useNotification } from '../contexts/NotificationContext';
+import { useTheme } from '../contexts/ThemeContext';
 
 const SettingsPage: React.FC = () => {
   // Would integrate with device notification system in a real mobile app
@@ -32,18 +33,36 @@ const SettingsPage: React.FC = () => {
     return localStorage.getItem('showMotivationOnStartup') !== 'false'; // Default to true
   });
   
+  const [urgentNotifications, setUrgentNotifications] = React.useState(() => {
+    return localStorage.getItem('urgentNotifications') === 'true'; // Default to false
+  });
+  
   const { resetTimer } = useTimer();
   const { state: taskState } = useTasks();
   const { state: procrastinationState } = useProcrastination();
+  const { requestPermissions } = useNotification();
+  const { theme, toggleTheme } = useTheme();
   
   useEffect(() => {
     // Request notification permissions on page load
-    const requestNotificationPermissions = async () => {
-      const granted = await NotificationService.requestPermissions();
-      setAllowNotifications(granted);
+    const handleRequestPermissions = async () => {
+      try {
+        await requestPermissions();
+        setAllowNotifications(true);
+        toast({
+          title: 'Permissions Requested',
+          description: 'Notification permissions have been requested. Check your device settings if needed.',
+        });
+      } catch (error) {
+        toast({
+          title: 'Permission Error',
+          description: 'Failed to request notification permissions.',
+          variant: 'destructive',
+        });
+      }
     };
     
-    requestNotificationPermissions();
+    handleRequestPermissions();
   }, []);
   
   const toggleDarkMode = () => {
@@ -83,6 +102,11 @@ const SettingsPage: React.FC = () => {
       title: newValue ? "Startup quotes enabled" : "Startup quotes disabled",
       description: "Your preference has been saved",
     });
+  };
+  
+  const handleUrgentNotificationsChange = (checked: boolean) => {
+    setUrgentNotifications(checked);
+    localStorage.setItem('urgentNotifications', checked.toString());
   };
   
   // Apply dark mode on initial load
@@ -155,36 +179,50 @@ const SettingsPage: React.FC = () => {
         animate="show"
       >
         <motion.div variants={item}>
-          <Card className="overflow-hidden border border-gray-100 dark:border-gray-800 bg-white/80 dark:bg-gray-800/90 backdrop-blur-sm shadow-md hover:shadow-lg transition-all">
+          <Card className="overflow-hidden rounded-2xl bg-white/70 dark:bg-card border border-gray-200 dark:border-transparent backdrop-blur-md shadow-md hover:shadow-lg transition-colors">
             <CardHeader className="pb-2">
               <div className="flex justify-between items-center">
-                <CardTitle className="text-lg font-medium">Appearance</CardTitle>
-                <Button 
-                  variant="outline" 
-                  size="icon"
-                  onClick={toggleDarkMode}
-                  className="rounded-full h-9 w-9 bg-background shadow-sm hover:shadow"
-                >
-                  {isDarkMode ? (
-                    <Sun className="h-5 w-5 text-amber-400" />
-                  ) : (
-                    <Moon className="h-5 w-5 text-focus-400" />
-                  )}
-                </Button>
+                <CardTitle className="text-lg font-semibold text-gray-900 dark:text-white">Appearance</CardTitle>
+                <div className="flex justify-center">
+                  <button
+                    onClick={toggleTheme}
+                    className="p-2 rounded-lg flex flex-col items-center justify-center transition-colors bg-gray-100 dark:bg-gray-800" 
+                    aria-label={`Current theme: ${theme.charAt(0).toUpperCase() + theme.slice(1)}. Click to switch to next theme.`}
+                  >
+                    {theme === 'light' && <Sun className="w-5 h-5 mb-1 text-yellow-500" />}
+                    {theme === 'dark' && <Moon className="w-5 h-5 mb-1 text-blue-400" />}
+                    {theme === 'blue' && <Palette className="w-5 h-5 mb-1 text-blue-600" />}
+                    <span className="text-xs capitalize">{theme}</span>
+                  </button>
+                </div>
               </div>
               <CardDescription className="text-sm text-gray-500 dark:text-gray-400">
-                Toggle between dark and light mode for your comfort
+                Toggle between light, dark, and blue mode for your comfort
               </CardDescription>
             </CardHeader>
+            <CardContent className="px-6 py-4 space-y-4">
+              <div className="flex justify-center">
+                <button
+                  onClick={toggleTheme}
+                  className="p-2 rounded-lg flex flex-col items-center justify-center transition-colors bg-gray-100 dark:bg-gray-800" 
+                  aria-label={`Current theme: ${theme.charAt(0).toUpperCase() + theme.slice(1)}. Click to switch to next theme.`}
+                >
+                  {theme === 'light' && <Sun className="w-5 h-5 mb-1 text-yellow-500" />}
+                  {theme === 'dark' && <Moon className="w-5 h-5 mb-1 text-blue-400" />}
+                  {theme === 'blue' && <Palette className="w-5 h-5 mb-1 text-blue-600" />}
+                  <span className="text-xs capitalize">{theme}</span>
+                </button>
+              </div>
+            </CardContent>
           </Card>
         </motion.div>
         
         <motion.div variants={item}>
-          <Card className="overflow-hidden border border-gray-100 dark:border-gray-800 bg-white/80 dark:bg-gray-800/90 backdrop-blur-sm shadow-md hover:shadow-lg transition-all">
+          <Card className="overflow-hidden rounded-2xl bg-white/70 dark:bg-card border border-gray-200 dark:border-transparent backdrop-blur-md shadow-md hover:shadow-lg transition-colors">
             <CardHeader>
               <CardTitle className="text-lg font-medium">Notifications</CardTitle>
             </CardHeader>
-            <CardContent className="space-y-4">
+            <CardContent className="px-6 py-4 space-y-4">
               <div className="space-y-4">
                 <div className="flex items-center justify-between p-2 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700/50 transition-colors">
                   <Label htmlFor="notifications" className="flex-1 cursor-pointer">
@@ -195,12 +233,17 @@ const SettingsPage: React.FC = () => {
                     checked={allowNotifications} 
                     onCheckedChange={async (checked) => {
                       if (checked) {
-                        const granted = await NotificationService.requestPermissions();
-                        setAllowNotifications(granted);
-                        if (!granted) {
+                        try {
+                          await requestPermissions();
+                          setAllowNotifications(true);
                           toast({
-                            title: "Permission denied",
-                            description: "Please enable notifications in your browser/device settings",
+                            title: "Permissions Requested",
+                            description: "Notification permissions have been requested. Check your device settings if needed.",
+                          });
+                        } catch (error) {
+                          toast({
+                            title: "Permission Error",
+                            description: "Failed to request notification permissions.",
                             variant: "destructive"
                           });
                         }
@@ -233,6 +276,18 @@ const SettingsPage: React.FC = () => {
                   />
                 </div>
                 
+                <div className="flex items-center justify-between p-4 bg-white dark:bg-gray-800 rounded-lg shadow-sm">
+                  <label htmlFor="urgentNotifications" className="flex-1 text-sm font-medium text-gray-700 dark:text-gray-300">
+                    Use urgent call-style notifications
+                  </label>
+                  <Switch
+                    id="urgentNotifications"
+                    checked={urgentNotifications}
+                    onCheckedChange={handleUrgentNotificationsChange}
+                    className="data-[state=checked]:bg-blue-500"
+                  />
+                </div>
+                
                 <div className="pt-4 border-t border-gray-100 dark:border-gray-700 mt-4">
                   <h3 className="text-sm font-medium mb-4">Notification Sounds</h3>
                   
@@ -251,11 +306,11 @@ const SettingsPage: React.FC = () => {
         </motion.div>
         
         <motion.div variants={item}>
-          <Card className="overflow-hidden border border-gray-100 dark:border-gray-800 bg-white/80 dark:bg-gray-800/90 backdrop-blur-sm shadow-md hover:shadow-lg transition-all">
+          <Card className="overflow-hidden rounded-2xl bg-white/70 dark:bg-card border border-gray-200 dark:border-transparent backdrop-blur-md shadow-md hover:shadow-lg transition-colors">
             <CardHeader>
               <CardTitle className="text-lg font-medium">Data Management</CardTitle>
             </CardHeader>
-            <CardContent className="space-y-3">
+            <CardContent className="px-6 py-4 space-y-4">
               <Button 
                 variant="outline" 
                 className="w-full justify-start bg-white dark:bg-transparent hover:bg-gray-50 dark:hover:bg-gray-700/50 transition-all"
@@ -295,11 +350,29 @@ const SettingsPage: React.FC = () => {
         </motion.div>
         
         <motion.div variants={item}>
-          <Card className="overflow-hidden border border-gray-100 dark:border-gray-800 bg-white/80 dark:bg-gray-800/90 backdrop-blur-sm shadow-md hover:shadow-lg transition-all">
+          <Card className="overflow-hidden rounded-2xl bg-white/70 dark:bg-card border border-gray-200 dark:border-transparent backdrop-blur-md shadow-md hover:shadow-lg transition-colors">
+            <CardHeader>
+              <CardTitle className="text-lg font-medium">About</CardTitle>
+            </CardHeader>
+            <CardContent className="px-6 py-4 space-y-4">
+              <div className="text-center py-4">
+                <h3 className="text-xl font-semibold bg-gradient-to-r from-focus-300 to-focus-500 bg-clip-text text-transparent">FocusFlow</h3>
+                <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">Version 1.0.0</p>
+                <p className="text-sm text-gray-600 dark:text-gray-300 mt-4 px-4">
+                  A productivity app designed to help you overcome procrastination 
+                  and stay focused on your important tasks.
+                </p>
+              </div>
+            </CardContent>
+          </Card>
+        </motion.div>
+        
+        <motion.div variants={item}>
+          <Card className="overflow-hidden rounded-2xl bg-white/70 dark:bg-card border border-gray-200 dark:border-transparent backdrop-blur-md shadow-md hover:shadow-lg transition-colors">
             <CardHeader>
               <CardTitle className="text-lg font-medium">Vision Board Settings</CardTitle>
             </CardHeader>
-            <CardContent className="space-y-4">
+            <CardContent className="px-6 py-4 space-y-4">
               <div className="space-y-4">
                 <div className="flex items-center justify-between p-2 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700/50 transition-colors">
                   <div className="flex-1">
@@ -334,24 +407,6 @@ const SettingsPage: React.FC = () => {
                     onCheckedChange={toggleMotivationOnStartup}
                   />
                 </div>
-              </div>
-            </CardContent>
-          </Card>
-        </motion.div>
-        
-        <motion.div variants={item}>
-          <Card className="overflow-hidden border border-gray-100 dark:border-gray-800 bg-white/80 dark:bg-gray-800/90 backdrop-blur-sm shadow-md hover:shadow-lg transition-all">
-            <CardHeader>
-              <CardTitle className="text-lg font-medium">About</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div className="text-center py-4">
-                <h3 className="text-xl font-semibold bg-gradient-to-r from-focus-300 to-focus-500 bg-clip-text text-transparent">FocusFlow</h3>
-                <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">Version 1.0.0</p>
-                <p className="text-sm text-gray-600 dark:text-gray-300 mt-4 px-4">
-                  A productivity app designed to help you overcome procrastination 
-                  and stay focused on your important tasks.
-                </p>
               </div>
             </CardContent>
           </Card>

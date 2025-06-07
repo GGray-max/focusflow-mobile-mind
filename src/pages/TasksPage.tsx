@@ -24,8 +24,9 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { cn } from '@/lib/utils';
 import { Input } from '@/components/ui/input';
 import { motion, AnimatePresence } from 'framer-motion';
-// Removed unused imports
 import { toast } from '@/components/ui/use-toast';
+import { Tooltip, TooltipContent, TooltipTrigger } from '../components/ui/tooltip';
+import { useNotification } from '../contexts/NotificationContext';
 
 const TasksPage: React.FC = () => {
   // State for dialogs and UI
@@ -60,8 +61,6 @@ const TasksPage: React.FC = () => {
     addTask, 
     toggleComplete, 
     togglePriority,
-    // deleteTask, // Handled by TaskDetailDialog
-    // updateTask, // Handled by TaskDetailDialog
     setPage,
     setSearchTerm,
     getFilteredAndSortedTasks // This is the function from context
@@ -324,6 +323,29 @@ const TasksPage: React.FC = () => {
       );
     };
 
+  const { scheduleNotification } = useNotification();
+
+  const scheduleTaskNotification = async (task: Task) => {
+    try {
+      await scheduleNotification({
+        title: task.title,
+        body: 'Task reminder',
+        date: task.dueDate || new Date(Date.now() + 60 * 1000), // Default to 1 minute from now if no due date
+        isUrgent: localStorage.getItem('urgentNotifications') === 'true'
+      });
+      toast({
+        title: 'Notification Set',
+        description: `Reminder for "${task.title}" has been scheduled.`
+      });
+    } catch (error) {
+      toast({
+        title: 'Notification Error',
+        description: 'Failed to schedule notification.',
+        variant: 'destructive'
+      });
+    }
+  };
+
   return (
     <MobileLayout>
     <div className="space-y-4 p-4 max-w-4xl mx-auto">
@@ -363,11 +385,17 @@ const TasksPage: React.FC = () => {
             <Calendar size={18} />
           </Button>
           
-          <Button 
+          <Button
             onClick={() => setIsAddTaskDialogOpen(true)}
-            className="bg-focus-500 hover:bg-focus-600 text-white"
+            className="rounded-full w-14 h-14 shadow-lg"
+            aria-label="Add new task"
           >
-            <Plus size={18} className="mr-1" /> Add Task
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <Plus className="w-6 h-6" />
+              </TooltipTrigger>
+              <TooltipContent>Add New Task</TooltipContent>
+            </Tooltip>
           </Button>
         </div>
       </div>

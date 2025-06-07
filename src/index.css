@@ -96,6 +96,89 @@
   }
 }
 
+/* Dark theme variables */
+:root[data-theme='dark'] {
+  --background: #141427;
+  --card: rgba(29, 28, 63, 0.9);
+  --popover: #1E1E3F;
+  --muted: #1E1E3F;
+  --input: #2C2C3C;
+  --accent: #8B5CF6;
+  --foreground: #E0E0E0;
+  --border: rgba(255, 255, 255, 0.1);
+  --ring: #8B5CF6;
+}
+
+/* Override card backdrop blur for dark mode for sharper look */
+[data-theme='dark'] .card {
+  background-color: var(--card) !important;
+  border: 1px solid var(--border) !important;
+  backdrop-filter: none !important;
+}
+
+/* Adjust card header/content colors */
+[data-theme='dark'] .card-header,
+[data-theme='dark'] .card-content {
+  background-color: transparent !important;
+}
+
+/* Fine-tune text in settings page */
+[data-theme='dark'] .text-gray-500 {
+  color: #b0b0b0 !important;
+}
+
+/* Dark theme overrides using CSS variables */
+[data-theme='dark'] {
+  background-color: var(--background);
+  color: var(--foreground);
+}
+
+[data-theme='dark'] .bg-background {
+  background-color: var(--background) !important;
+}
+
+[data-theme='dark'] .bg-white,
+[data-theme='dark'] .bg-card,
+[data-theme='dark'] .bg-popover,
+[data-theme='dark'] .bg-muted {
+  background-color: var(--card) !important;
+}
+
+[data-theme='dark'] .bg-input {
+  background-color: var(--input) !important;
+  color: var(--foreground) !important;
+}
+
+[data-theme='dark'] a {
+  color: var(--accent) !important;
+}
+
+[data-theme='dark'] .border-gray-200,
+[data-theme='dark'] .border {
+  border-color: var(--border) !important;
+}
+
+[data-theme='dark'] input:focus,
+[data-theme='dark'] textarea:focus,
+[data-theme='dark'] select:focus {
+  outline-color: var(--ring) !important;
+}
+
+/* Button accents */
+[data-theme='dark'] button:not(.bg-transparent):not(.bg-black) {
+  background-color: var(--card) !important;
+  color: var(--foreground) !important;
+  border-color: var(--border) !important;
+}
+
+[data-theme='dark'] button:not(.bg-transparent):not(.bg-black):hover {
+  background-color: #2c2c3c !important;
+}
+
+[data-theme='dark'] button.bg-transparent {
+  color: var(--foreground) !important;
+}
+
 @layer utilities {
   .glass-card {
     @apply backdrop-blur-sm bg-white/90 dark:bg-black/40 border border-gray-200 dark:border-gray-700 shadow-sm;
@@ -183,4 +266,45 @@
 /* Better default styling */
 html {
   @apply antialiased;
+}
+
+/* Custom theme styles */
+
+/* Blue theme */
+[data-theme='blue'] {
+  background-color: #eff6ff;
+  color: #1e3a8a;
+}
+
+[data-theme='blue'] .bg-background {
+  background-color: #eff6ff;
+}
+
+[data-theme='blue'] .bg-white {
+  background-color: #dbeafe;
+}
+
+[data-theme='blue'] .text-foreground {
+  color: #1e3a8a;
+}
+
+[data-theme='blue'] .text-gray-500 {
+  color: #1d4ed8;
+}
+
+[data-theme='blue'] a {
+  color: #2563eb;
+}
+
+[data-theme='blue'] .border-gray-200 {
+  border-color: #bfdbfe;
+}
+
+/* Ensure responsiveness for all themes */
+@media (max-width: 640px) {
+  [data-theme='light'] .max-w-md,
+  [data-theme='dark'] .max-w-md,
+  [data-theme='blue'] .max-w-md {
+    max-width: 100%;
+  }
 }
