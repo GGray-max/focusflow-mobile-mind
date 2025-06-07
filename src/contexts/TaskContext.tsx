@@ -1,3 +1,4 @@
+
 import React, { createContext, useContext, useReducer, useCallback, useMemo, useEffect } from 'react';
 import { toast } from '@/components/ui/use-toast';
 
@@ -5,6 +6,7 @@ export interface FocusSession {
   startTime: string;
   endTime: string;
   duration: number;
+  date: string;
 }
 
 export interface SubTask {
@@ -39,10 +41,11 @@ export interface Task {
   isActive?: boolean;
   totalTimeSpent: number;
   focusSessions: FocusSession[];
+  streak?: number;
 }
 
 interface TaskAction {
-  type: 'ADD_TASK' | 'UPDATE_TASK' | 'DELETE_TASK' | 'TOGGLE_TASK' | 'TOGGLE_PRIORITY' | 'ADD_SUBTASK' | 'TOGGLE_SUBTASK' | 'SET_SEARCH_TERM' | 'SET_SORT_BY' | 'SET_FILTERS' | 'SET_PAGE' | 'SET_TASKS_PER_PAGE' | 'ADD_CATEGORY' | 'RESET_TASK_TIME' | 'SET_FILTER_CATEGORY' | 'SET_FILTER_PRIORITY' | 'SET_FILTER_DUE_DATE' | 'SET_FILTER_RECURRING';
+  type: 'ADD_TASK' | 'UPDATE_TASK' | 'DELETE_TASK' | 'TOGGLE_TASK' | 'TOGGLE_PRIORITY' | 'ADD_SUBTASK' | 'TOGGLE_SUBTASK' | 'SET_SEARCH_TERM' | 'SET_SORT_BY' | 'SET_FILTERS' | 'SET_PAGE' | 'SET_TASKS_PER_PAGE' | 'ADD_CATEGORY' | 'RESET_TASK_TIME' | 'SET_FILTER_CATEGORY' | 'SET_FILTER_PRIORITY' | 'SET_FILTER_DUE_DATE' | 'SET_FILTER_RECURRING' | 'ADD_FOCUS_TIME';
   payload: any;
 }
 
@@ -61,6 +64,8 @@ interface TaskState {
   page: number;
   tasksPerPage: number;
   categories: string[];
+  loading: boolean;
+  currentPage: number;
 }
 
 const initialState: TaskState = {
@@ -75,6 +80,8 @@ const initialState: TaskState = {
   page: 1,
   tasksPerPage: 5,
   categories: ['Personal', 'Work', 'Study'],
+  loading: false,
+  currentPage: 1,
 };
 
 const taskReducer = (state: TaskState, action: TaskAction): TaskState => {
@@ -133,7 +140,7 @@ const taskReducer = (state: TaskState, action: TaskAction): TaskState => {
     case 'SET_FILTERS':
       return { ...state, showCompleted: action.payload.showCompleted, showPriority: action.payload.showPriority, showRecurring: action.payload.showRecurring, filterCategory: action.payload.category, filterPriority: action.payload.priority, filterDueDate: action.payload.dueDate };
     case 'SET_PAGE':
-      return { ...state, page: action.payload };
+      return { ...state, page: action.payload, currentPage: action.payload };
     case 'SET_TASKS_PER_PAGE':
       return { ...state, tasksPerPage: action.payload };
     case 'ADD_CATEGORY':
@@ -153,6 +160,25 @@ const taskReducer = (state: TaskState, action: TaskAction): TaskState => {
       return { ...state, filterDueDate: action.payload };
     case 'SET_FILTER_RECURRING':
       return { ...state, filterRecurring: action.payload };
+    case 'ADD_FOCUS_TIME':
+      return {
+        ...state,
+        tasks: state.tasks.map((task) =>
+          task.id === action.payload.taskId ? {
+            ...task,
+            totalTimeSpent: (task.totalTimeSpent || 0) + action.payload.duration,
+            focusSessions: [
+              ...(task.focusSessions || []),
+              {
+                startTime: new Date().toISOString(),
+                endTime: new Date().toISOString(),
+                duration: action.payload.duration,
+                date: new Date().toISOString()
+              }
+            ]
+          } : task
+        ),
+      };
     default:
       return state;
   }
@@ -164,6 +190,7 @@ interface TaskContextType {
   updateTask: (taskId: string, updates: Partial<Task>) => void;
   deleteTask: (taskId: string) => void;
   toggleTask: (taskId: string) => void;
+  toggleComplete: (taskId: string) => void;
   togglePriority: (taskId: string) => void;
   addSubtask: (taskId: string, title: string) => void;
   toggleSubtask: (taskId: string, subtaskId: string) => void;
@@ -178,6 +205,7 @@ interface TaskContextType {
   getTotalPages: () => number;
   addCategory: (category: string) => void;
   resetTaskTime: (taskId: string) => void;
+  addFocusTime: (taskId: string, duration: number) => void;
   setFilterCategory: (category?: string) => void;
   setFilterPriority: (priority?: string) => void;
   setFilterDueDate: (dueDate?: string) => void;
@@ -261,6 +289,10 @@ export const TaskProvider: React.FC<{ children: React.ReactNode }> = ({ children
     dispatch({ type: 'TOGGLE_TASK', payload: taskId });
   }, []);
 
+  const toggleComplete = useCallback((taskId: string) => {
+    dispatch({ type: 'TOGGLE_TASK', payload: taskId });
+  }, []);
+
   const togglePriority = useCallback((taskId: string) => {
     dispatch({ type: 'TOGGLE_PRIORITY', payload: taskId });
   }, []);
@@ -303,6 +335,10 @@ export const TaskProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
   const resetTaskTime = useCallback((taskId: string) => {
     dispatch({ type: 'RESET_TASK_TIME', payload: taskId });
+  }, []);
+
+  const addFocusTime = useCallback((taskId: string, duration: number) => {
+    dispatch({ type: 'ADD_FOCUS_TIME', payload: { taskId, duration } });
   }, []);
 
   const setFilterCategory = useCallback((category?: string) => {
@@ -398,6 +434,7 @@ export const TaskProvider: React.FC<{ children: React.ReactNode }> = ({ children
     updateTask,
     deleteTask,
     toggleTask,
+    toggleComplete,
     togglePriority,
     addSubtask,
     toggleSubtask,
@@ -412,12 +449,13 @@ export const TaskProvider: React.FC<{ children: React.ReactNode }> = ({ children
     getTotalPages,
     addCategory,
     resetTaskTime,
+    addFocusTime,
     setFilterCategory,
     setFilterPriority,
     setFilterDueDate,
     setFilterRecurring,
     categories: state.categories,
-  }), [state, addTask, updateTask, deleteTask, toggleTask, togglePriority, addSubtask, toggleSubtask, setSearchTerm, setSortBy, setSort, setFilters, setPage, setTasksPerPage, getFilteredAndSortedTasks, getPaginatedTasks, getTotalPages, addCategory, resetTaskTime, setFilterCategory, setFilterPriority, setFilterDueDate, setFilterRecurring, state.categories]);
+  }), [state, addTask, updateTask, deleteTask, toggleTask, toggleComplete, togglePriority, addSubtask, toggleSubtask, setSearchTerm, setSortBy, setSort, setFilters, setPage, setTasksPerPage, getFilteredAndSortedTasks, getPaginatedTasks, getTotalPages, addCategory, resetTaskTime, addFocusTime, setFilterCategory, setFilterPriority, setFilterDueDate, setFilterRecurring, state.categories]);
 
   return (
     <TaskContext.Provider value={value}>
