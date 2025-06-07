@@ -29,10 +29,10 @@ const TaskFiltersDialog: React.FC<TaskFiltersDialogProps> = ({ isOpen, onClose }
   const selectedDate = filterDueDate ? new Date(filterDueDate) : undefined;
 
   const handleReset = () => {
-    setFilterCategory(null);
-    setFilterPriority(null);
-    setFilterDueDate(null);
-    setFilterRecurring(null);
+    setFilterCategory(undefined);
+    setFilterPriority(undefined);
+    setFilterDueDate(undefined);
+    setFilterRecurring(false);
     onClose();
   };
 
@@ -101,8 +101,8 @@ const TaskFiltersDialog: React.FC<TaskFiltersDialogProps> = ({ isOpen, onClose }
           >
             <Label htmlFor="filterRecurring" className="font-medium text-sm">Recurring</Label>
             <Select 
-              value={filterRecurring || "all"} 
-              onValueChange={(value) => setFilterRecurring(value === "all" ? null : value)}
+              value={filterRecurring ? "recurring" : "all"} 
+              onValueChange={(value) => setFilterRecurring(value === "recurring")}
             >
               <SelectTrigger id="filterRecurring" className="border-focus-200 focus:border-focus-400 rounded-lg h-11 transition-all">
                 <SelectValue placeholder="All Tasks" />

@@ -111,11 +111,16 @@ const AddTaskDialog: React.FC<AddTaskDialogProps> = ({ isOpen, onClose }) => {
         id: `new-subtask-${index}`,
         title: text,
         completed: false,
+        createdAt: new Date().toISOString(),
       })),
       isPriority: false,
       recurrence: recurrence,
       isMonthlyTask: isMonthlyTask,
       isActive: recurrence !== 'none' ? true : undefined,
+      completedAt: undefined,
+      updatedAt: new Date().toISOString(),
+      totalTimeSpent: 0,
+      focusSessions: [],
     };
     
     addTask(newTask);

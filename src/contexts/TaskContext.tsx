@@ -1,4 +1,3 @@
-
 import React, { createContext, useContext, useReducer, useCallback, useMemo, useEffect } from 'react';
 import { toast } from '@/components/ui/use-toast';
 
@@ -84,6 +83,10 @@ interface TaskState {
     priority?: string;
     dueDate?: string;
   };
+  filterCategory?: string;
+  filterPriority?: string;
+  filterDueDate?: string;
+  filterRecurring?: boolean;
   currentPage: number;
   tasksPerPage: number;
   categories: string[];
@@ -101,6 +104,10 @@ const initialState: TaskState = {
     showPriority: false,
     showRecurring: false,
   },
+  filterCategory: undefined,
+  filterPriority: undefined,
+  filterDueDate: undefined,
+  filterRecurring: undefined,
   currentPage: 1,
   tasksPerPage: 10,
   categories: ['Personal', 'Work', 'Health', 'Learning', 'Finance', 'Home'],
@@ -279,6 +286,7 @@ interface TaskContextType {
   toggleSubtask: (taskId: string, subtaskId: string) => void;
   setSearchTerm: (term: string) => void;
   setSortBy: (sortBy: 'createdAt' | 'dueDate' | 'priority', direction: 'asc' | 'desc') => void;
+  setSort: (sortBy: 'createdAt' | 'dueDate' | 'priority', direction: 'asc' | 'desc') => void;
   setFilters: (filters: { showCompleted: boolean; showPriority: boolean; showRecurring: boolean; category?: string; priority?: string; dueDate?: string }) => void;
   setPage: (page: number) => void;
   setTasksPerPage: (count: number) => void;
@@ -292,6 +300,7 @@ interface TaskContextType {
   setFilterPriority: (priority?: string) => void;
   setFilterDueDate: (dueDate?: string) => void;
   setFilterRecurring: (recurring: boolean) => void;
+  categories: string[];
 }
 
 const TaskContext = createContext<TaskContextType | undefined>(undefined);
@@ -548,6 +557,10 @@ export const TaskProvider: React.FC<{ children: React.ReactNode }> = ({ children
     return Math.ceil(filteredTasks.length / state.tasksPerPage);
   }, [getFilteredAndSortedTasks, state.tasksPerPage]);
 
+  const setSort = useCallback((sortBy: 'createdAt' | 'dueDate' | 'priority', direction: 'asc' | 'desc') => {
+    dispatch({ type: 'SET_SORT_BY', payload: { sortBy, direction } });
+  }, []);
+
   const value: TaskContextType = {
     state,
     addTask,
@@ -561,6 +574,7 @@ export const TaskProvider: React.FC<{ children: React.ReactNode }> = ({ children
     toggleSubtask,
     setSearchTerm,
     setSortBy,
+    setSort,
     setFilters,
     setPage,
     setTasksPerPage,
@@ -574,6 +588,7 @@ export const TaskProvider: React.FC<{ children: React.ReactNode }> = ({ children
     setFilterPriority,
     setFilterDueDate,
     setFilterRecurring,
+    categories: state.categories,
   };
 
   return (

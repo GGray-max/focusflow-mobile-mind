@@ -110,7 +110,7 @@ const App = () => {
                           {showLoader && <AppLoader onFinished={() => setShowLoader(false)} />}
                           <Toaster />
                           <Sonner />
-                          <PersistentNotificationBar />
+                          <PersistentNotificationBar message="" type="info" />
                           <Routes>
                             <Route path="/" element={
                               <ErrorBoundary>
