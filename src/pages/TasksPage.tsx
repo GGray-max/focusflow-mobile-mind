@@ -516,7 +516,10 @@ const TasksPage: React.FC = () => {
         </div>
       )}
     </div>
-  </MobileLayout>
-)};
+        </div>
+      </div>
+    </MobileLayout>
+  );
+};
 
 export default TasksPage;
