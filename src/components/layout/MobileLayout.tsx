@@ -33,10 +33,9 @@ const MobileLayout: React.FC<MobileLayoutProps> = ({ children }) => {
         style={{ 
           paddingBottom: '80px', 
           scrollbarWidth: 'none', 
-          msOverflowStyle: 'none',
-          WebkitScrollbar: { display: 'none' }
+          msOverflowStyle: 'none'
         }}
-      ></main>
+      >
         <AnimatePresence mode="wait">
           <motion.div
             key={location.pathname}
