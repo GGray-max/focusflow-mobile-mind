@@ -1,3 +1,4 @@
+
 import React, { createContext, useContext, useReducer, useCallback, useMemo, useEffect } from 'react';
 import { toast } from '@/components/ui/use-toast';
 
@@ -9,13 +10,25 @@ export type SubTask = {
   createdAt: string;
 };
 
+export type FocusSession = {
+  id: string;
+  duration: number; // in seconds
+  date: string;
+  taskId: string;
+};
+
 export type Task = {
   id: string;
   title: string;
   description?: string;
   completed: boolean;
+  completedAt?: string;
   isPriority: boolean;
   dueDate?: string;
+  dueTime?: string;
+  startTime?: string;
+  endTime?: string;
+  duration?: number; // in minutes
   createdAt: string;
   updatedAt: string;
   subtasks: SubTask[];
@@ -30,6 +43,7 @@ export type Task = {
   streak?: number;
   lastCompletedDate?: string;
   recurringTaskId?: string;
+  focusSessions?: FocusSession[];
 };
 
 type TaskAction = 
@@ -47,11 +61,13 @@ type TaskAction =
   | { type: 'TOGGLE_RECURRENCE_STATE'; payload: string }
   | { type: 'SET_SEARCH_TERM'; payload: string }
   | { type: 'SET_SORT_BY'; payload: { sortBy: 'createdAt' | 'dueDate' | 'priority'; direction: 'asc' | 'desc' } }
-  | { type: 'SET_FILTERS'; payload: { showCompleted: boolean; showPriority: boolean; showRecurring: boolean; category?: string } }
+  | { type: 'SET_FILTERS'; payload: { showCompleted: boolean; showPriority: boolean; showRecurring: boolean; category?: string; priority?: string; dueDate?: string } }
   | { type: 'SET_PAGE'; payload: number }
   | { type: 'SET_TASKS_PER_PAGE'; payload: number }
   | { type: 'UPDATE_SUBTASK'; payload: { taskId: string; subtask: SubTask } }
-  | { type: 'ADD_FOCUS_TIME'; payload: { taskId: string; timeSpent: number } };
+  | { type: 'ADD_FOCUS_TIME'; payload: { taskId: string; timeSpent: number } }
+  | { type: 'RESET_TASK_TIME'; payload: string }
+  | { type: 'ADD_CATEGORY'; payload: string };
 
 interface TaskState {
   tasks: Task[];
@@ -65,9 +81,12 @@ interface TaskState {
     showPriority: boolean;
     showRecurring: boolean;
     category?: string;
+    priority?: string;
+    dueDate?: string;
   };
   currentPage: number;
   tasksPerPage: number;
+  categories: string[];
 }
 
 const initialState: TaskState = {
@@ -84,6 +103,7 @@ const initialState: TaskState = {
   },
   currentPage: 1,
   tasksPerPage: 10,
+  categories: ['Personal', 'Work', 'Health', 'Learning', 'Finance', 'Home'],
 };
 
 function taskReducer(state: TaskState, action: TaskAction): TaskState {
@@ -113,7 +133,12 @@ function taskReducer(state: TaskState, action: TaskAction): TaskState {
         ...state,
         tasks: state.tasks.map(task =>
           task.id === action.payload
-            ? { ...task, completed: !task.completed, updatedAt: new Date().toISOString() }
+            ? { 
+                ...task, 
+                completed: !task.completed, 
+                completedAt: !task.completed ? new Date().toISOString() : undefined,
+                updatedAt: new Date().toISOString() 
+              }
             : task
         )
       };
@@ -203,10 +228,38 @@ function taskReducer(state: TaskState, action: TaskAction): TaskState {
             ? {
                 ...task,
                 totalTimeSpent: (task.totalTimeSpent || 0) + action.payload.timeSpent,
+                focusSessions: [
+                  ...(task.focusSessions || []),
+                  {
+                    id: Date.now().toString(),
+                    duration: action.payload.timeSpent,
+                    date: new Date().toISOString(),
+                    taskId: task.id
+                  }
+                ],
                 updatedAt: new Date().toISOString()
               }
             : task
         )
+      };
+    case 'RESET_TASK_TIME':
+      return {
+        ...state,
+        tasks: state.tasks.map(task =>
+          task.id === action.payload
+            ? {
+                ...task,
+                totalTimeSpent: 0,
+                focusSessions: [],
+                updatedAt: new Date().toISOString()
+              }
+            : task
+        )
+      };
+    case 'ADD_CATEGORY':
+      return {
+        ...state,
+        categories: [...state.categories, action.payload]
       };
     default:
       return state;
@@ -216,7 +269,7 @@ function taskReducer(state: TaskState, action: TaskAction): TaskState {
 interface TaskContextType {
   state: TaskState;
   addTask: (task: Omit<Task, 'id' | 'createdAt' | 'updatedAt'>) => Promise<void>;
-  updateTask: (id: string, updates: Partial<Task>) => Promise<void>;
+  updateTask: (task: Task) => Promise<void>;
   deleteTask: (id: string) => Promise<void>;
   toggleComplete: (id: string) => void;
   togglePriority: (id: string) => void;
@@ -226,13 +279,19 @@ interface TaskContextType {
   toggleSubtask: (taskId: string, subtaskId: string) => void;
   setSearchTerm: (term: string) => void;
   setSortBy: (sortBy: 'createdAt' | 'dueDate' | 'priority', direction: 'asc' | 'desc') => void;
-  setFilters: (filters: { showCompleted: boolean; showPriority: boolean; showRecurring: boolean; category?: string }) => void;
+  setFilters: (filters: { showCompleted: boolean; showPriority: boolean; showRecurring: boolean; category?: string; priority?: string; dueDate?: string }) => void;
   setPage: (page: number) => void;
   setTasksPerPage: (count: number) => void;
   getFilteredAndSortedTasks: () => Task[];
   getPaginatedTasks: () => Task[];
   getTotalPages: () => number;
   addFocusTime: (taskId: string, timeSpent: number) => void;
+  resetTaskTime: (taskId: string) => void;
+  addCategory: (category: string) => void;
+  setFilterCategory: (category?: string) => void;
+  setFilterPriority: (priority?: string) => void;
+  setFilterDueDate: (dueDate?: string) => void;
+  setFilterRecurring: (recurring: boolean) => void;
 }
 
 const TaskContext = createContext<TaskContextType | undefined>(undefined);
@@ -278,6 +337,7 @@ export const TaskProvider: React.FC<{ children: React.ReactNode }> = ({ children
         subtasks: taskData.subtasks || [],
         tags: taskData.tags || [],
         priority: taskData.priority || 'medium',
+        focusSessions: [],
       };
 
       dispatch({ type: 'ADD_TASK', payload: newTask });
@@ -292,30 +352,24 @@ export const TaskProvider: React.FC<{ children: React.ReactNode }> = ({ children
     }
   }, []);
 
-  const updateTask = useCallback(async (id: string, updates: Partial<Task>) => {
+  const updateTask = useCallback(async (updatedTask: Task) => {
     try {
-      const existingTask = state.tasks.find(task => task.id === id);
-      if (!existingTask) {
-        throw new Error('Task not found');
-      }
-
-      const updatedTask: Task = {
-        ...existingTask,
-        ...updates,
+      const taskWithUpdatedTime: Task = {
+        ...updatedTask,
         updatedAt: new Date().toISOString(),
       };
 
-      dispatch({ type: 'UPDATE_TASK', payload: updatedTask });
+      dispatch({ type: 'UPDATE_TASK', payload: taskWithUpdatedTime });
       
       toast({
         title: "Task updated",
-        description: `"${updatedTask.title}" has been updated.`,
+        description: `"${taskWithUpdatedTime.title}" has been updated.`,
       });
     } catch (error) {
       console.error('Error updating task:', error);
       dispatch({ type: 'SET_ERROR', payload: 'Failed to update task' });
     }
-  }, [state.tasks]);
+  }, []);
 
   const deleteTask = useCallback(async (id: string) => {
     try {
@@ -381,7 +435,7 @@ export const TaskProvider: React.FC<{ children: React.ReactNode }> = ({ children
     dispatch({ type: 'SET_SORT_BY', payload: { sortBy, direction } });
   }, []);
 
-  const setFilters = useCallback((filters: { showCompleted: boolean; showPriority: boolean; showRecurring: boolean; category?: string }) => {
+  const setFilters = useCallback((filters: { showCompleted: boolean; showPriority: boolean; showRecurring: boolean; category?: string; priority?: string; dueDate?: string }) => {
     dispatch({ type: 'SET_FILTERS', payload: filters });
   }, []);
 
@@ -396,6 +450,32 @@ export const TaskProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const addFocusTime = useCallback((taskId: string, timeSpent: number) => {
     dispatch({ type: 'ADD_FOCUS_TIME', payload: { taskId, timeSpent } });
   }, []);
+
+  const resetTaskTime = useCallback((taskId: string) => {
+    dispatch({ type: 'RESET_TASK_TIME', payload: taskId });
+  }, []);
+
+  const addCategory = useCallback((category: string) => {
+    if (!state.categories.includes(category)) {
+      dispatch({ type: 'ADD_CATEGORY', payload: category });
+    }
+  }, [state.categories]);
+
+  const setFilterCategory = useCallback((category?: string) => {
+    dispatch({ type: 'SET_FILTERS', payload: { ...state.filters, category } });
+  }, [state.filters]);
+
+  const setFilterPriority = useCallback((priority?: string) => {
+    dispatch({ type: 'SET_FILTERS', payload: { ...state.filters, priority } });
+  }, [state.filters]);
+
+  const setFilterDueDate = useCallback((dueDate?: string) => {
+    dispatch({ type: 'SET_FILTERS', payload: { ...state.filters, dueDate } });
+  }, [state.filters]);
+
+  const setFilterRecurring = useCallback((recurring: boolean) => {
+    dispatch({ type: 'SET_FILTERS', payload: { ...state.filters, showRecurring: recurring } });
+  }, [state.filters]);
 
   const getFilteredAndSortedTasks = useCallback(() => {
     let filteredTasks = [...state.tasks];
@@ -425,6 +505,10 @@ export const TaskProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
     if (state.filters.category) {
       filteredTasks = filteredTasks.filter(task => task.category === state.filters.category);
+    }
+
+    if (state.filters.priority) {
+      filteredTasks = filteredTasks.filter(task => task.priority === state.filters.priority);
     }
 
     // Apply sorting
@@ -484,6 +568,12 @@ export const TaskProvider: React.FC<{ children: React.ReactNode }> = ({ children
     getPaginatedTasks,
     getTotalPages,
     addFocusTime,
+    resetTaskTime,
+    addCategory,
+    setFilterCategory,
+    setFilterPriority,
+    setFilterDueDate,
+    setFilterRecurring,
   };
 
   return (

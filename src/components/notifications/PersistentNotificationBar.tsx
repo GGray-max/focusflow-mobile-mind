@@ -1,94 +1,90 @@
-import React, { useState, useEffect } from 'react';
-import { motion, AnimatePresence } from 'framer-motion';
-import { Bell, Check } from 'lucide-react';
-import { Button } from '../ui/button';
-import { useNotification } from '../../contexts/NotificationContext';
 
-const PersistentNotificationBar = () => {
-  const { urgentNotification, dismissUrgentNotification } = useNotification();
-  const [ringtone, setRingtone] = useState<HTMLAudioElement | null>(null);
+import React, { useState, useEffect } from 'react';
+import { X, AlertTriangle } from 'lucide-react';
+import { Button } from '@/components/ui/button';
+import { motion, AnimatePresence } from 'framer-motion';
+
+interface PersistentNotificationBarProps {
+  message: string;
+  type?: 'info' | 'warning' | 'error' | 'success';
+  onDismiss?: () => void;
+  autoHide?: boolean;
+  autoHideDelay?: number;
+}
+
+const PersistentNotificationBar: React.FC<PersistentNotificationBarProps> = ({
+  message,
+  type = 'info',
+  onDismiss,
+  autoHide = false,
+  autoHideDelay = 5000
+}) => {
+  const [isVisible, setIsVisible] = useState(true);
 
   useEffect(() => {
-    let vibrationInterval: NodeJS.Timeout | null = null;
+    if (autoHide && autoHideDelay > 0) {
+      const timer = setTimeout(() => {
+        setIsVisible(false);
+        onDismiss?.();
+      }, autoHideDelay) as unknown as NodeJS.Timeout;
 
-    if (urgentNotification && !ringtone) {
-      // Play continuous ringtone only if not already playing
-      const audio = new Audio('/sounds/urgent.wav');
-      audio.loop = true;
-      setRingtone(audio);
-      audio.play().catch((error) => {
-        console.error('Audio play error:', error);
-        // Fallback to a different sound if urgent.wav fails
-        const fallbackAudio = new Audio('/sounds/beep.wav');
-        fallbackAudio.loop = true;
-        setRingtone(fallbackAudio);
-        fallbackAudio.play().catch((fbError) => console.error('Fallback audio error:', fbError));
-      });
-
-      // Trigger continuous vibration if supported
-      if (navigator.vibrate) {
-        const vibrate = () => {
-          navigator.vibrate(400); // Single vibration for 400ms
-        };
-        vibrate();
-        vibrationInterval = setInterval(vibrate, 800); // Repeat every 800ms for a pulsing effect
-      }
-    } else if (!urgentNotification && ringtone) {
-      ringtone.pause();
-      ringtone.currentTime = 0;
-      setRingtone(null);
-      if (vibrationInterval) {
-        clearInterval(vibrationInterval);
-        vibrationInterval = null;
-      }
-      // Stop vibration
-      if (navigator.vibrate) {
-        navigator.vibrate(0);
-      }
+      return () => clearTimeout(timer);
     }
+  }, [autoHide, autoHideDelay, onDismiss]);
 
-    return () => {
-      if (ringtone) {
-        ringtone.pause();
-        ringtone.currentTime = 0;
-      }
-      if (vibrationInterval) {
-        clearInterval(vibrationInterval);
-      }
-      // Stop vibration
-      if (navigator.vibrate) {
-        navigator.vibrate(0);
-      }
-    };
-  }, [urgentNotification, ringtone]);
+  const handleDismiss = () => {
+    setIsVisible(false);
+    onDismiss?.();
+  };
+
+  const getTypeStyles = () => {
+    switch (type) {
+      case 'warning':
+        return 'bg-yellow-50 border-yellow-200 text-yellow-800';
+      case 'error':
+        return 'bg-red-50 border-red-200 text-red-800';
+      case 'success':
+        return 'bg-green-50 border-green-200 text-green-800';
+      default:
+        return 'bg-blue-50 border-blue-200 text-blue-800';
+    }
+  };
+
+  const getIcon = () => {
+    switch (type) {
+      case 'warning':
+      case 'error':
+        return <AlertTriangle size={16} />;
+      default:
+        return null;
+    }
+  };
 
   return (
     <AnimatePresence>
-      {urgentNotification && (
+      {isVisible && (
         <motion.div
-          initial={{ y: '-100%' }}
-          animate={{ y: 0 }}
-          exit={{ y: '-100%' }}
-          transition={{ type: 'spring', stiffness: 300, damping: 30 }}
-          className="fixed top-0 left-0 right-0 bg-red-500 text-white p-4 z-50 shadow-md"
-          role="alert"
-          aria-label="Urgent Notification"
+          initial={{ opacity: 0, y: -50 }}
+          animate={{ opacity: 1, y: 0 }}
+          exit={{ opacity: 0, y: -50 }}
+          className={`fixed top-0 left-0 right-0 z-50 p-3 border-b ${getTypeStyles()}`}
         >
-          <div className="flex items-center justify-between">
+          <div className="flex items-center justify-between max-w-4xl mx-auto">
             <div className="flex items-center space-x-2">
-              <Bell className="w-5 h-5 animate-pulse" />
-              <span className="font-semibold">{urgentNotification.title}</span>
-              <span className="text-sm">{urgentNotification.body}</span>
+              {getIcon()}
+              <span className="text-sm font-medium">{message}</span>
             </div>
-            <Button
-              variant="secondary"
-              size="sm"
-              onClick={dismissUrgentNotification}
-              className="bg-white text-red-500 hover:bg-gray-100"
-            >
-              <Check className="w-4 h-4 mr-1" />
-              Notified
-            </Button>
+            
+            {onDismiss && (
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={handleDismiss}
+                className="h-6 w-6 p-0 hover:bg-transparent"
+              >
+                <X size={14} />
+              </Button>
+            )}
           </div>
         </motion.div>
       )}
