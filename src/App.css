@@ -1,9 +1,10 @@
 
 #root {
-  max-width: 1280px;
-  margin: 0 auto;
-  padding: 2rem;
-  text-align: center;
+  margin: 0;
+  padding: 0;
+  width: 100vw;
+  height: 100vh;
+  overflow: hidden;
 }
 
 .logo {
@@ -43,7 +44,6 @@
 }
 
 /* Modern UI enhancements */
-
 .card-hover {
   transition: transform 0.3s ease, box-shadow 0.3s ease;
 }
@@ -201,4 +201,33 @@ input:focus, textarea:focus, select:focus {
   opacity: 1;
   transform: translate3d(0, 0, 0);
   transition: all 0.3s ease-out;
+}
+
+/* Mobile specific fixes */
+* {
+  box-sizing: border-box;
+}
+
+html, body {
+  margin: 0;
+  padding: 0;
+  width: 100%;
+  height: 100%;
+  overflow-x: hidden;
+}
+
+/* Ensure themes work properly */
+[data-theme='light'] {
+  background-color: hsl(0, 0%, 100%);
+  color: hsl(222.2, 84%, 4.9%);
+}
+
+[data-theme='dark'] {
+  background-color: hsl(222.2, 84%, 4.9%);
+  color: hsl(210, 40%, 98%);
+}
+
+[data-theme='blue'] {
+  background-color: hsl(214, 100%, 97%);
+  color: hsl(214, 100%, 15%);
 }

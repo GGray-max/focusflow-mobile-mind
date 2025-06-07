@@ -1,3 +1,4 @@
+
 import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
@@ -50,36 +51,13 @@ const App = () => {
       }
     };
 
-    // Set up dark mode from preferences with defensive programming
-    const setupDarkMode = () => {
-      try {
-        // Default to light mode if localStorage is not available
-        let isDarkMode = false;
-        
-        // Only access localStorage if it's available
-        if (typeof localStorage !== 'undefined') {
-          isDarkMode = localStorage.getItem('darkMode') === 'true' || 
-                      (!('darkMode' in localStorage) && 
-                      window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches);
-        } else {
-          console.info('localStorage not available, defaulting to light mode');
-        }
-        
-        // Removed setIsDarkMode(isDarkMode);
-      } catch (error) {
-        console.error('Error setting up dark mode:', error);
-        // Continue execution despite dark mode errors
-      }
-    };
-
-    setupDarkMode();
     initializeNotifications();
     
     // Watch for system theme changes if no preference is saved
     if (!('darkMode' in localStorage)) {
       const darkModeMediaQuery = window.matchMedia('(prefers-color-scheme: dark)');
       const handleChange = (e: MediaQueryListEvent) => {
-        // Removed setIsDarkMode(e.matches);
+        // Theme is now handled by ThemeProvider
       };
       
       darkModeMediaQuery.addEventListener('change', handleChange);
@@ -106,7 +84,7 @@ const App = () => {
                   <NotificationProvider>
                     <TooltipProvider>
                       <BrowserRouter>
-                        <div className="w-screen h-screen flex flex-col overflow-hidden">
+                        <div className="min-h-screen w-full overflow-hidden">
                           {showLoader && <AppLoader onFinished={() => setShowLoader(false)} />}
                           <Toaster />
                           <Sonner />
