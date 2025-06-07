@@ -44,10 +44,11 @@ const InsightsPage: React.FC = () => {
   
   return (
     <MobileLayout>
-      <div className="text-center mb-6">
-        <h1 className="text-2xl font-bold">Insights</h1>
-        <p className="text-gray-500 text-sm">Track and overcome procrastination</p>
-      </div>
+      <div className="p-4">
+        <div className="text-center mb-6">
+          <h1 className="text-2xl font-bold text-foreground">Insights</h1>
+          <p className="text-muted-foreground text-sm">Track and overcome procrastination</p>
+        </div>
       
       <Tabs defaultValue="log">
         <TabsList className="grid w-full grid-cols-3">
@@ -134,6 +135,7 @@ const InsightsPage: React.FC = () => {
           )}
         </TabsContent>
       </Tabs>
+      </div>
     </MobileLayout>
   );
 };

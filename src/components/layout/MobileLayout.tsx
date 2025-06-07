@@ -1,4 +1,3 @@
-
 import React, { ReactNode } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { AnimatePresence, motion } from 'framer-motion';
@@ -26,14 +25,15 @@ const MobileLayout: React.FC<MobileLayoutProps> = ({ children }) => {
   ];
 
   return (
-    <div className="fixed inset-0 w-full h-full flex flex-col bg-background text-foreground overflow-hidden" data-theme={theme}>
+    <div className="fixed inset-0 w-full h-full bg-background text-foreground" data-theme={theme} style={{ margin: 0, padding: 0, top: 0, left: 0 }}>
       {/* Main content with proper scrolling */}
       <main 
-        className="flex-1 overflow-y-auto overflow-x-hidden" 
+        className="h-full overflow-y-auto overflow-x-hidden" 
         style={{ 
-          paddingBottom: '80px', 
-          scrollbarWidth: 'none', 
-          msOverflowStyle: 'none'
+          paddingBottom: '80px',
+          height: 'calc(100vh - 80px)',
+          margin: 0,
+          padding: '0 0 80px 0'
         }}
       >
         <AnimatePresence mode="wait">
@@ -49,7 +49,7 @@ const MobileLayout: React.FC<MobileLayoutProps> = ({ children }) => {
           </motion.div>
         </AnimatePresence>
       </main>
-      
+
       {/* Fixed Bottom Navigation */}
       <nav className="fixed bottom-0 left-0 right-0 h-20 bg-background border-t border-border z-50 flex items-center justify-around px-2 shadow-lg">
         {navItems.map(({ path, Icon, label }, index) => {
