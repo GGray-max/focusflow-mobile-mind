@@ -132,20 +132,13 @@ const TaskDetailDialog: React.FC<TaskDetailDialogProps> = ({ task, isOpen, onClo
   };
   
   const handleSaveChanges = () => {
-    if (editedTask && dueDate) {
+    if (editedTask && task) {
       const updatedTask = {
         ...editedTask,
-        dueDate: dueDate.toISOString()
+        dueDate: dueDate ? dueDate.toISOString() : editedTask.dueDate
       };
       
-      updateTask(updatedTask);
-      setIsEditing(false);
-      toast({
-        title: "Task updated",
-        description: "Changes have been successfully saved",
-      });
-    } else if (editedTask) {
-      updateTask(editedTask);
+      updateTask(task.id, updatedTask);
       setIsEditing(false);
       toast({
         title: "Task updated",
