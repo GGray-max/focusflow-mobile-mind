@@ -1,4 +1,3 @@
-
 import React, { useState, useMemo } from 'react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
@@ -126,12 +125,9 @@ const FreeTimeAnalysis: React.FC<FreeTimeAnalysisProps> = ({ isOpen, onClose }) 
 
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
-      <DialogContent className="sm:max-w-md">
-        <DialogHeader>
-          <DialogTitle>Free Time Analysis</DialogTitle>
-        </DialogHeader>
-        
-        <div className="space-y-4 py-2">
+      <DialogContent className="sm:max-w-[425px] md:max-w-[600px] max-h-[80vh] overflow-y-auto bg-white dark:bg-gray-800 rounded-xl shadow-xl p-6 flex flex-col">
+        <DialogTitle>Free Time Analysis</DialogTitle>
+        <div className="space-y-4 mt-2">
           <div>
             <Calendar
               mode="single"

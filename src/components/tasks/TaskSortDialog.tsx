@@ -1,4 +1,3 @@
-
 import React from 'react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
@@ -28,10 +27,8 @@ const TaskSortDialog: React.FC<TaskSortDialogProps> = ({ isOpen, onClose }) => {
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
       <DialogContent className="sm:max-w-md">
-        <DialogHeader>
-          <DialogTitle>Sort Tasks</DialogTitle>
-        </DialogHeader>
-        <div className="space-y-6 py-4">
+        <DialogTitle>Sort Tasks</DialogTitle>
+        <div className="space-y-6 mt-2">
           <motion.div 
             className="space-y-3"
             initial={{ opacity: 0, y: 10 }}

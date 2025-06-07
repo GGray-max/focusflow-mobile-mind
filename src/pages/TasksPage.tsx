@@ -1,7 +1,21 @@
-import React, { useState } from 'react';
+import React, { useState, useCallback, useEffect } from 'react';
 import MobileLayout from '@/components/layout/MobileLayout';
 import { Button } from '@/components/ui/button';
-import { Plus, Filter, Star, Calendar, Search, Mic, ArrowUp, ArrowDown, SlidersHorizontal, Repeat as RepeatIcon, ArrowLeft, ArrowRight } from 'lucide-react';
+import { 
+  Plus, 
+  Star, 
+  Calendar, 
+  Search, 
+  Mic, 
+  ArrowLeft, 
+  ArrowRight, 
+  Filter, 
+  Clock,
+  SlidersHorizontal,
+  Calendar as CalendarIcon,
+  List,
+  CheckCircle
+} from 'lucide-react';
 import { useTasks, Task } from '@/contexts/TaskContext';
 import TaskItem from '@/components/tasks/TaskItem';
 import AddTaskDialog from '@/components/tasks/AddTaskDialog';
@@ -10,69 +24,157 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { cn } from '@/lib/utils';
 import { Input } from '@/components/ui/input';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Pagination } from '@/components/ui/pagination';
-import TaskFiltersDialog from '@/components/tasks/TaskFiltersDialog';
-import TaskSortDialog from '@/components/tasks/TaskSortDialog';
-import SpeechRecognition from '@/components/tasks/SpeechRecognition';
-import CalendarView from '@/components/tasks/CalendarView';
-import FreeTimeAnalysis from '@/components/tasks/FreeTimeAnalysis';
-import DailyMotivation from '@/components/vision/DailyMotivation';
+// Removed unused imports
 import { toast } from '@/components/ui/use-toast';
 
 const TasksPage: React.FC = () => {
+  // State for dialogs and UI
   const [isAddTaskDialogOpen, setIsAddTaskDialogOpen] = useState(false);
-  const [isFiltersDialogOpen, setIsFiltersDialogOpen] = useState(false);
-  const [isSortDialogOpen, setIsSortDialogOpen] = useState(false);
   const [selectedTask, setSelectedTask] = useState<Task | null>(null);
+  const [isVoiceInputActive, setIsVoiceInputActive] = useState(false);
+  
+  // Filter and view states
   const [showOnlyPriority, setShowOnlyPriority] = useState(false);
   const [showMonthlyTasks, setShowMonthlyTasks] = useState(false);
-  // Add the missing state variable for recurring tasks
-  const [showRecurringTasks, setShowRecurringTasks] = useState(false);
-  const [isVoiceInputActive, setIsVoiceInputActive] = useState(false);
-  // Calendar view removed as requested
-  const [showFreeTimeAnalysis, setShowFreeTimeAnalysis] = useState(false);
+  const [activeTab, setActiveTab] = useState('today');
+  const [searchQuery, setSearchQuery] = useState('');
   
+  // Helper function to compare dates by day (ignoring time)
+  const isSameDay = (date1: string, date2: string): boolean => {
+    return new Date(date1).toDateString() === new Date(date2).toDateString();
+  };
+  
+  // Helper function to check if a date is in the future
+  const isFutureDate = (dateStr: string): boolean => {
+    const today = new Date();
+    const date = new Date(dateStr);
+    return date > new Date(today.setHours(0, 0, 0, 0));
+  };
+  
+  // Get today's date in YYYY-MM-DD format
+  const today = new Date().toISOString().split('T')[0];
+  
+  // Get task context and state
   const { 
-    state, 
+    state: { tasks, loading, currentPage, tasksPerPage },
+    addTask, 
     toggleComplete, 
-    togglePriority, 
-    setSearchTerm, 
-    getPaginatedTasks,
-    getTotalPages,
+    togglePriority,
+    // deleteTask, // Handled by TaskDetailDialog
+    // updateTask, // Handled by TaskDetailDialog
     setPage,
-    getFilteredAndSortedTasks
+    setSearchTerm,
+    getFilteredAndSortedTasks // This is the function from context
   } = useTasks();
   
-  const { 
-    tasks, 
-    loading, 
-    searchTerm,
-    currentPage,
-    tasksPerPage
-  } = state;
+  // Use the getFilteredAndSortedTasks from context directly
+  const allTasks = React.useMemo(() => getFilteredAndSortedTasks(), [getFilteredAndSortedTasks]);
   
-  // Filter tasks
-  const incompleteTasks = tasks.filter(task => !task.completed);
-  const completedTasks = tasks.filter(task => task.completed);
-  
-  // Apply filters
-  let filteredIncompleteTasks = [...incompleteTasks];
-  
-  // Priority filter
-  if (showOnlyPriority) {
-    filteredIncompleteTasks = filteredIncompleteTasks.filter(task => task.isPriority);
-  }
-  
-  // Monthly tasks filter
-  if (showMonthlyTasks) {
-    filteredIncompleteTasks = filteredIncompleteTasks.filter(task => task.isMonthlyTask);
-  }
-  
-  // Recurring tasks filtering now handled in filters dialog
+  // Helper to check if a task is due on a specific date
+  const isTaskDueOnDate = (task: Task, date: string): boolean => {
+    if (!task.dueDate) return false;
+    return isSameDay(task.dueDate, date);
+  };
 
-  // Get paginated tasks
-  const paginatedTasks = getPaginatedTasks();
-  const totalPages = getTotalPages();
+  // Helper to check if a task is overdue
+  const isTaskOverdue = (task: Task): boolean => {
+    if (!task.dueDate || task.completed) return false;
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    return new Date(task.dueDate) < today && !isSameDay(task.dueDate, today.toISOString().split('T')[0]);
+  };
+
+  // Separate tasks into today's tasks, upcoming tasks, and other tasks
+  const todaysTasks = allTasks.filter(task => 
+    !task.completed && 
+    task.dueDate && 
+    isTaskDueOnDate(task, today)
+  );
+  
+  const upcomingTasks = allTasks.filter(task => 
+    !task.completed && 
+    task.dueDate && 
+    isFutureDate(task.dueDate) && 
+    !isTaskDueOnDate(task, today)
+  );
+  
+  const otherTasks = allTasks.filter(task => 
+    !task.completed && 
+    (!task.dueDate || isTaskOverdue(task))
+  );
+  
+  const completedTasks = allTasks.filter(task => task.completed);
+  
+  // Get tasks for the active tab
+  const getTasksForActiveTab = useCallback(() => {
+    switch (activeTab) {
+      case 'today':
+        return todaysTasks;
+      case 'upcoming':
+        return upcomingTasks;
+      case 'all':
+        return allTasks.filter(task => !task.completed);
+      case 'completed':
+        return completedTasks;
+      default:
+        return [];
+    }
+  }, [activeTab, todaysTasks, upcomingTasks, allTasks, completedTasks]);
+  
+  // Get current tasks for the active tab with memoization
+  const currentTasks = React.useMemo(() => getTasksForActiveTab(), [getTasksForActiveTab]);
+  
+  // Calculate pagination
+  const totalPages = Math.ceil(currentTasks.length / tasksPerPage) || 1;
+  const currentPageNum = Math.min(currentPage, Math.max(1, totalPages));
+  
+  // Get paginated tasks with bounds checking
+  const paginatedTasks = React.useMemo(() => {
+    const start = (currentPageNum - 1) * tasksPerPage;
+    const end = currentPageNum * tasksPerPage;
+    return currentTasks.slice(start, end);
+  }, [currentTasks, currentPageNum, tasksPerPage]);
+  
+  // Update page if it was out of bounds
+  useEffect(() => {
+    if (currentPage !== currentPageNum) {
+      setPage(currentPageNum);
+    }
+  }, [currentPage, currentPageNum, setPage]);
+  
+  // Handle page change with bounds checking
+  const handlePageChange = useCallback((newPage: number) => {
+    const page = Math.max(1, Math.min(newPage, totalPages));
+    setPage(page);
+  }, [setPage, totalPages]);
+  
+  // Reset to first page when search query changes
+  useEffect(() => {
+    if (searchQuery) {
+      setPage(1);
+    }
+  }, [searchQuery, setPage]);
+  
+  // Handle search input change
+  const handleSearchChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    setSearchQuery(e.target.value);
+  };
+  
+  // Toggle voice input
+  const toggleVoiceInput = () => {
+    setIsVoiceInputActive(!isVoiceInputActive);
+    // In a real app, you would integrate with a speech recognition API here
+  };
+  
+  // Handle task completion toggle
+  const handleToggleComplete = useCallback((taskId: string) => {
+    toggleComplete(taskId);
+  }, [toggleComplete]);
+  
+  // Handle task priority toggle
+  const handleTogglePriority = useCallback((taskId: string) => {
+    togglePriority(taskId);
+  }, [togglePriority]);
   
   // Voice recognition callback
   const handleSpeechResult = (text: string) => {
@@ -92,6 +194,7 @@ const TasksPage: React.FC = () => {
       } else if (text.toLowerCase().includes('search for')) {
         const searchQuery = text.replace(/search for/i, '').trim();
         setSearchTerm(searchQuery);
+        setSearchQuery(searchQuery);
         toast({
           title: "Voice search",
           description: `Searching for: "${searchQuery}"`,
@@ -99,306 +202,287 @@ const TasksPage: React.FC = () => {
       } else {
         // Just use as search term
         setSearchTerm(text);
+        setSearchQuery(text);
       }
     }
     
     setIsVoiceInputActive(false);
   };
 
+  // Update search term when searchQuery changes
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      setSearchTerm(searchQuery);
+    }, 300);
+    
+    return () => clearTimeout(timer);
+  }, [searchQuery, setSearchTerm]);
+
+  // Place renderTaskList here so it can access all variables
+  const renderTaskList = (tasks: Task[], options: { 
+    header?: string; 
+    emptyMessage?: string;
+    showOtherTasks?: boolean;
+  } = {}) => {
+    const { header, emptyMessage, showOtherTasks = false } = options;
+    
+    if (loading) {
+      return (
+        <div className="flex justify-center py-8">
+          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
+        </div>
+      );
+    }
+    
+    const hasTasks = tasks.length > 0;
+    const hasOtherTasks = showOtherTasks && otherTasks.length > 0;
+    
+    if (!hasTasks && !hasOtherTasks) {
+      return (
+        <div className="text-center py-8 text-muted-foreground">
+          {emptyMessage || 'No tasks found.'}
+        </div>
+      );
+    }
+    
+    return (
+      <div className="space-y-4">
+        {header && (
+          <h3 className="text-sm font-medium text-muted-foreground">{header}</h3>
+        )}
+        
+        <div className="space-y-2">
+          {hasTasks ? (
+            <AnimatePresence>
+              {paginatedTasks.map((task) => (
+                <motion.div
+                  key={task.id}
+                  initial={{ opacity: 0, y: 10 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  exit={{ opacity: 0, y: -10 }}
+                  transition={{ duration: 0.2 }}
+                >
+                  <TaskItem
+                    task={task}
+                    onToggleComplete={() => handleToggleComplete(task.id)}
+                    onTogglePriority={() => handleTogglePriority(task.id)}
+                    onClick={() => setSelectedTask(task)}
+                  />
+                </motion.div>
+              ))}
+            </AnimatePresence>
+          ) : null}
+          
+          {showOtherTasks && hasOtherTasks && (
+            <div className="mt-6 space-y-3">
+              <h3 className="text-sm font-medium text-muted-foreground">Other Tasks</h3>
+              <div className="space-y-2">
+                {otherTasks.map((task) => (
+                  <motion.div
+                    key={task.id}
+                    initial={{ opacity: 0, y: 5 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{ duration: 0.2 }}
+                  >
+                    <TaskItem
+                      task={task}
+                      onToggleComplete={() => handleToggleComplete(task.id)}
+                      onTogglePriority={() => handleTogglePriority(task.id)}
+                      onClick={() => setSelectedTask(task)}
+                    />
+                  </motion.div>
+                ))}
+              </div>
+            </div>
+          )}
+        </div>  
+          
+          {totalPages > 1 && (
+            <div className="mt-4 flex justify-center items-center gap-4">
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => handlePageChange(currentPageNum - 1)}
+                disabled={currentPageNum <= 1}
+              >
+                <ArrowLeft size={16} className="mr-1" /> Prev
+              </Button>
+              <span className="text-sm text-muted-foreground">
+                Page {currentPageNum} of {totalPages}
+              </span>
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => handlePageChange(currentPageNum + 1)}
+                disabled={currentPageNum >= totalPages}
+              >
+                Next <ArrowRight size={16} className="ml-1" />
+              </Button>
+            </div>
+          )}
+        </div>
+      );
+    };
+
   return (
     <MobileLayout>
-      <div className="space-y-3 sm:space-y-6 max-w-full overflow-hidden px-2 sm:px-0">
-        <DailyMotivation showOnHomeOnly={true} />
-        <div className="flex flex-wrap justify-between items-center gap-2">
-          <div>
-            <h1 className="text-3xl font-bold bg-gradient-to-r from-focus-400 to-focus-300 text-transparent bg-clip-text">FocusFlow</h1>
-            <p className="text-muted-foreground text-sm">Manage your tasks</p>
-          </div>
-          
-          <div className="flex items-center gap-1 sm:gap-2 flex-wrap">
-            <Button 
-              variant="outline" 
-              size="icon" 
-              onClick={() => setShowOnlyPriority(!showOnlyPriority)}
-              className={cn(
-                "rounded-full transition-all h-8 w-8 sm:h-9 sm:w-9", 
-                showOnlyPriority 
-                  ? "bg-focus-100 text-focus-400 border-focus-200" 
-                  : "hover:border-focus-300 hover:text-focus-400"
-              )}
-              title="Priority Tasks"
-            >
-              <Star size={16} className={showOnlyPriority ? "fill-focus-300" : ""} />
-            </Button>
-            
-            <Button 
-              variant="outline" 
-              size="icon" 
-              onClick={() => setShowMonthlyTasks(!showMonthlyTasks)}
-              className={cn(
-                "rounded-full transition-all h-8 w-8 sm:h-9 sm:w-9", 
-                showMonthlyTasks 
-                  ? "bg-focus-100 text-focus-400 border-focus-200" 
-                  : "hover:border-focus-300 hover:text-focus-400"
-              )}
-              title="Monthly Tasks"
-            >
-              <Calendar size={16} className={showMonthlyTasks ? "text-focus-400" : ""} />
-            </Button>
-            
-            <Button 
-              onClick={() => setIsAddTaskDialogOpen(true)}
-              className="rounded-full bg-focus-400 hover:bg-focus-500 shadow-md text-xs sm:text-sm py-1 px-2 sm:py-2 sm:px-3 h-8 sm:h-9"
-            >
-              <Plus size={16} className="mr-1" /> <span className="whitespace-nowrap">Add Task</span>
-            </Button>
-          </div>
+    <div className="space-y-4 p-4 max-w-4xl mx-auto">
+      {/* Header */}
+      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+        <div>
+          <h1 className="text-3xl font-bold bg-gradient-to-r from-focus-400 to-focus-300 text-transparent bg-clip-text">
+            FocusFlow
+          </h1>
+          <p className="text-muted-foreground">Manage your tasks and stay productive</p>
         </div>
         
-        {/* Search and view toggle */}
-        <div className="flex flex-wrap items-center gap-2">
-          <div className="relative flex-1 min-w-[180px]">
-            <Search className="absolute left-2 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-            <Input
-              placeholder="Search tasks..."
-              className="pl-8 pr-8 h-8 sm:h-9 rounded-full border-focus-200 focus-within:border-focus-400 text-sm"
-              value={searchTerm}
-              onChange={(e) => setSearchTerm(e.target.value)}
-            />
-            {searchTerm && (
-              <button
-                className="absolute right-2 top-1/2 -translate-y-1/2 h-5 w-5 text-muted-foreground hover:text-gray-600 focus:outline-none flex items-center justify-center"
-                onClick={() => setSearchTerm('')}
-                aria-label="Clear search"
-              >
-                <span className="text-lg leading-none">&times;</span>
-              </button>
-            )}
-          </div>
-          
-          <div className="flex gap-1 sm:gap-2">
-            <Button 
-              variant="outline" 
-              size="icon" 
-              onClick={() => setIsVoiceInputActive(true)}
-              className="rounded-full h-8 w-8 sm:h-9 sm:w-9"
-              title="Voice Input"
-            >
-              <Mic size={16} className={isVoiceInputActive ? "text-red-500 animate-pulse" : ""} />
-            </Button>
-            
-            <Button 
-              variant="outline" 
-              size="icon" 
-              onClick={() => setIsFiltersDialogOpen(true)}
-              className="rounded-full h-8 w-8 sm:h-9 sm:w-9" 
-              title="Filters"
-            >
-              <Filter size={16} />
-            </Button>
-            
-            <Button 
-              variant="outline" 
-              size="icon" 
-              onClick={() => setIsSortDialogOpen(true)}
-              className="rounded-full h-8 w-8 sm:h-9 sm:w-9"
-              title="Sort"
-            >
-              <SlidersHorizontal size={16} />
-            </Button>
-          </div>
-        </div>
-        
-        {/* Free Time Analysis */}
-        <div className="flex justify-center px-2">
+        <div className="flex items-center gap-2">
           <Button 
-            variant="outline"
-            size="sm"
-            onClick={() => setShowFreeTimeAnalysis(true)}
-            className="rounded-full transition-all duration-300 transform hover:bg-focus-100 hover:text-focus-400 hover:border-focus-300 h-8 text-xs sm:text-sm w-full max-w-xs"
+            variant="outline" 
+            size="icon" 
+            onClick={() => setShowOnlyPriority(!showOnlyPriority)}
+            className={cn(
+              showOnlyPriority && 'bg-focus-100 text-focus-600 border-focus-300',
+              'transition-colors'
+            )}
+            title={showOnlyPriority ? 'Show all tasks' : 'Show priority tasks only'}
           >
-            <Calendar size={14} className="mr-1.5 flex-shrink-0" />
-            <span className="truncate">Free Time Analysis</span>
+            <Star size={18} className={showOnlyPriority ? 'fill-current' : ''} />
+          </Button>
+          
+          <Button 
+            variant="outline" 
+            size="icon" 
+            onClick={() => setShowMonthlyTasks(!showMonthlyTasks)}
+            className={cn(
+              showMonthlyTasks && 'bg-focus-100 text-focus-600 border-focus-300',
+              'transition-colors'
+            )}
+            title={showMonthlyTasks ? 'Show all tasks' : 'Show monthly tasks only'}
+          >
+            <Calendar size={18} />
+          </Button>
+          
+          <Button 
+            onClick={() => setIsAddTaskDialogOpen(true)}
+            className="bg-focus-500 hover:bg-focus-600 text-white"
+          >
+            <Plus size={18} className="mr-1" /> Add Task
           </Button>
         </div>
-        
-        {
-          <Tabs defaultValue="active" className="w-full">
-            <TabsList className="grid w-full grid-cols-2 rounded-lg bg-muted mb-4 h-auto py-1">
-              <TabsTrigger 
-                value="active" 
-                className="data-[state=active]:bg-white dark:data-[state=active]:bg-gray-800 data-[state=active]:shadow-sm rounded-md text-xs sm:text-sm py-1.5"
-              >
-                Active ({incompleteTasks.length})
-              </TabsTrigger>
-              <TabsTrigger 
-                value="completed" 
-                className="data-[state=active]:bg-white dark:data-[state=active]:bg-gray-800 data-[state=active]:shadow-sm rounded-md text-xs sm:text-sm py-1.5"
-              >
-                Completed ({completedTasks.length})
-              </TabsTrigger>
-            </TabsList>
-            
-            <TabsContent value="active" className="mt-0">
-              {loading ? (
-                <div className="py-12 flex flex-col items-center justify-center space-y-3">
-                  <div className="h-8 w-8 rounded-full border-4 border-focus-300 border-t-transparent animate-spin"></div>
-                  <p className="text-muted-foreground text-sm">Loading tasks...</p>
-                </div>
-              ) : paginatedTasks.length === 0 ? (
-                <div className="py-8 sm:py-12 flex flex-col items-center justify-center space-y-3 sm:space-y-4">
-                  <div className="p-2 sm:p-3 rounded-full bg-gray-100 dark:bg-gray-800 inline-flex">
-                    {showMonthlyTasks ? (
-                      <Calendar size={24} className="text-gray-400" />
-                    ) : (typeof showRecurringTasks !== 'undefined' && showRecurringTasks) ? (
-                      <RepeatIcon size={24} className="text-gray-400" />
-                    ) : searchTerm ? (
-                      <Search size={24} className="text-gray-400" />
-                    ) : (
-                      <Star size={24} className="text-gray-400" />
-                    )}
-                  </div>
-                  <p className="text-muted-foreground text-center text-sm px-2 sm:px-4 max-w-xs">
-                    {searchTerm 
-                      ? "No tasks match your search"
-                      : showOnlyPriority 
-                      ? "No priority tasks found"
-                      : showMonthlyTasks
-                      ? "No monthly tasks found"
-                      : showRecurringTasks
-                      ? "No recurring tasks found" 
-                      : "No active tasks found. Add a task to get started!"}
-                  </p>
-                </div>
-              ) : (
-                <div className="space-y-2 sm:space-y-3 overflow-hidden">
-                  <AnimatePresence>
-                    {paginatedTasks.filter(task => !task.completed).map((task, index) => (
-                      <motion.div
-                        key={task.id}
-                        initial={{ opacity: 0, y: 20 }}
-                        animate={{ opacity: 1, y: 0 }}
-                        exit={{ opacity: 0, scale: 0.95 }}
-                        transition={{ duration: 0.2, delay: Math.min(index * 0.05, 0.3) }}
-                        className="overflow-hidden"
-                      >
-                        <TaskItem
-                          task={task}
-                          onToggleComplete={() => toggleComplete(task.id)}
-                          onTogglePriority={() => togglePriority(task.id)}
-                          onClick={() => setSelectedTask(task)}
-                        />
-                      </motion.div>
-                    ))}
-                  </AnimatePresence>
-                  
-                  {/* Pagination */}
-                  {totalPages > 1 && (
-                    <div className="flex justify-center mt-3 sm:mt-6">
-                      <Pagination className="flex flex-wrap gap-1 sm:gap-2 justify-center items-center">
-                        <Button 
-                          variant="outline" 
-                          size="sm" 
-                          onClick={() => setPage(Math.max(1, currentPage - 1))}
-                          disabled={currentPage === 1}
-                          className="px-1 sm:px-2 h-7 sm:h-8 text-xs sm:text-sm min-w-[40px] sm:min-w-[60px]"
-                        >
-                          <ArrowLeft size={12} className="sm:mr-1" />
-                          <span className="hidden sm:inline">Prev</span>
-                        </Button>
-                        <span className="flex h-7 sm:h-8 items-center justify-center text-xs sm:text-sm px-1 sm:px-2 bg-gray-50 dark:bg-gray-800 rounded">
-                          <span className="hidden xs:inline">Page</span> {currentPage}/{totalPages}
-                        </span>
-                        <Button 
-                          variant="outline" 
-                          size="sm" 
-                          onClick={() => setPage(Math.min(totalPages, currentPage + 1))}
-                          disabled={currentPage === totalPages}
-                          className="px-1 sm:px-2 h-7 sm:h-8 text-xs sm:text-sm min-w-[40px] sm:min-w-[60px]"
-                        >
-                          <span className="hidden sm:inline">Next</span>
-                          <ArrowRight size={12} className="sm:ml-1" />
-                        </Button>
-                      </Pagination>
-                    </div>
-                  )}
-                </div>
-              )}
-            </TabsContent>
-            
-            <TabsContent value="completed" className="mt-0">
-              {loading ? (
-                <div className="py-12 flex flex-col items-center justify-center space-y-3">
-                  <div className="h-8 w-8 rounded-full border-4 border-focus-300 border-t-transparent animate-spin"></div>
-                  <p className="text-muted-foreground text-sm">Loading tasks...</p>
-                </div>
-              ) : completedTasks.length === 0 ? (
-                <div className="py-12 flex flex-col items-center justify-center">
-                  <div className="bg-gray-100 dark:bg-gray-800 rounded-full p-4 mb-3">
-                    <Filter size={30} className="text-gray-400" />
-                  </div>
-                  <p className="text-muted-foreground">No completed tasks yet</p>
-                </div>
-              ) : (
-                <div className="space-y-3">
-                  <AnimatePresence>
-                    {completedTasks.map((task, index) => (
-                      <motion.div
-                        key={task.id}
-                        initial={{ opacity: 0, y: 20 }}
-                        animate={{ opacity: 1, y: 0 }}
-                        exit={{ opacity: 0, scale: 0.95 }}
-                        transition={{ duration: 0.2, delay: index * 0.05 }}
-                      >
-                        <TaskItem
-                          task={task}
-                          onToggleComplete={() => toggleComplete(task.id)}
-                          onTogglePriority={() => togglePriority(task.id)}
-                          onClick={() => setSelectedTask(task)}
-                        />
-                      </motion.div>
-                    ))}
-                  </AnimatePresence>
-                </div>
-              )}
-            </TabsContent>
-          </Tabs>
-        }
       </div>
       
+      {/* Search */}
+      <div className="relative">
+        <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+        <Input
+          type="text"
+          placeholder="Search tasks..."
+          value={searchQuery}
+          onChange={handleSearchChange}
+          className="pl-10"
+        />
+        <Button
+          variant="ghost"
+          size="icon"
+          onClick={toggleVoiceInput}
+          className={cn(
+            'absolute right-1 top-1/2 transform -translate-y-1/2',
+            isVoiceInputActive && 'text-focus-500'
+          )}
+          title={isVoiceInputActive ? 'Listening...' : 'Voice search'}
+        >
+          <Mic size={18} className={isVoiceInputActive ? 'animate-pulse' : ''} />
+        </Button>
+      </div>
+      
+      {/* Tabs */}
+      <Tabs 
+        value={activeTab} 
+        onValueChange={(value) => {
+          setActiveTab(value);
+          setPage(1); // Reset to first page when changing tabs
+        }}
+        className="w-full"
+      >
+        <TabsList className="grid w-full grid-cols-4">
+          <TabsTrigger value="today" className="flex items-center gap-1">
+            <CalendarIcon size={14} />
+            <span className="hidden sm:inline">Today</span>
+          </TabsTrigger>
+          <TabsTrigger value="upcoming" className="flex items-center gap-1">
+            <Clock size={14} />
+            <span className="hidden sm:inline">Upcoming</span>
+          </TabsTrigger>
+          <TabsTrigger value="all" className="flex items-center gap-1">
+            <List size={14} />
+            <span className="hidden sm:inline">All</span>
+          </TabsTrigger>
+          <TabsTrigger value="completed" className="flex items-center gap-1">
+            <CheckCircle size={14} />
+            <span className="hidden sm:inline">Completed</span>
+          </TabsTrigger>
+        </TabsList>
+        
+        <div className="mt-4">
+          <TabsContent value="today">
+            {renderTaskList(todaysTasks, { showOtherTasks: true })}
+          </TabsContent>
+          
+          <TabsContent value="upcoming">
+            {renderTaskList(upcomingTasks, { showOtherTasks: true })}
+          </TabsContent>
+          
+          <TabsContent value="all">
+            {renderTaskList(allTasks.filter(task => !task.completed), { showOtherTasks: true })}
+          </TabsContent>
+          
+          <TabsContent value="completed">
+            {renderTaskList(completedTasks)}
+          </TabsContent>
+        </div>
+      </Tabs>
+
+      {/* Add Task Dialog */}
       <AddTaskDialog 
         isOpen={isAddTaskDialogOpen} 
         onClose={() => setIsAddTaskDialogOpen(false)} 
       />
       
-      <TaskDetailDialog 
-        task={selectedTask} 
-        isOpen={!!selectedTask} 
-        onClose={() => setSelectedTask(null)} 
-      />
+      {/* Task Detail Dialog */}
+      {selectedTask && (
+        <TaskDetailDialog
+          task={selectedTask}
+          isOpen={!!selectedTask}
+          onClose={() => setSelectedTask(null)}
+        />
+      )}
       
-      <TaskFiltersDialog
-        isOpen={isFiltersDialogOpen}
-        onClose={() => setIsFiltersDialogOpen(false)}
-      />
-      
-      <TaskSortDialog
-        isOpen={isSortDialogOpen}
-        onClose={() => setIsSortDialogOpen(false)}
-      />
-      
-      <FreeTimeAnalysis
-        isOpen={showFreeTimeAnalysis}
-        onClose={() => setShowFreeTimeAnalysis(false)}
-      />
-      
-      <SpeechRecognition 
-        isActive={isVoiceInputActive}
-        onSpeechResult={handleSpeechResult}
-        onCancel={() => setIsVoiceInputActive(false)}
-      />
-    </MobileLayout>
-  );
-};
+      {/* Voice Recognition UI */}
+      {isVoiceInputActive && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+          <div className="bg-white dark:bg-gray-800 rounded-lg p-6 max-w-sm w-full mx-4">
+            <div className="flex flex-col items-center space-y-4">
+              <div className="w-16 h-16 rounded-full bg-focus-100 dark:bg-focus-900 flex items-center justify-center">
+                <Mic size={32} className="text-focus-500 animate-pulse" />
+              </div>
+              <h3 className="text-lg font-medium">Listening...</h3>
+              <p className="text-muted-foreground text-center text-sm">
+                Speak now to add a task
+              </p>
+              <Button 
+                variant="outline" 
+                onClick={() => setIsVoiceInputActive(false)}
+                className="mt-2"
+              >
+                Cancel
+              </Button>
+            </div>
+          </div>
+        </div>
+      )}
+    </div>
+  </MobileLayout>
+)};
 
 export default TasksPage;

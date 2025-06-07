@@ -1,4 +1,3 @@
-
 import React from 'react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
@@ -44,9 +43,7 @@ const TaskFiltersDialog: React.FC<TaskFiltersDialogProps> = ({ isOpen, onClose }
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
       <DialogContent className="sm:max-w-md rounded-xl border-0 shadow-lg">
-        <DialogHeader>
-          <DialogTitle className="text-xl font-bold text-focus-500">Filter Tasks</DialogTitle>
-        </DialogHeader>
+        <DialogTitle>Filter Tasks</DialogTitle>
         <div className="space-y-5 py-4">
           <motion.div 
             className="space-y-2"

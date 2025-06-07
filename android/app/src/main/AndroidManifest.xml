@@ -34,10 +34,30 @@
         <receiver
             android:name="com.stanley.focusflow.RecurringTaskReceiver"
             android:enabled="true"
-            android:exported="false">
+            android:exported="true"
+            android:directBootAware="true"
+            android:process=":receiver"
+            tools:targetApi="31">
             <intent-filter>
                 <action android:name="com.stanley.focusflow.RECURRING_TASK" />
                 <action android:name="android.intent.action.BOOT_COMPLETED" />
+                <action android:name="android.intent.action.QUICKBOOT_POWERON" />
+                <action android:name="com.htc.intent.action.QUICKBOOT_POWERON" />
+                <action android:name="android.intent.action.LOCKED_BOOT_COMPLETED" />
+                <action android:name="android.intent.action.REBOOT" />
+                <action android:name="android.intent.action.MY_PACKAGE_REPLACED" />
+                <category android:name="android.intent.category.DEFAULT" />
+            </intent-filter>
+        </receiver>
+        
+        <!-- Alarm Receiver for scheduled tasks -->
+        <receiver
+            android:name="com.stanley.focusflow.AlarmReceiver"
+            android:enabled="true"
+            android:exported="true"
+            android:process=":alarm_receiver">
+            <intent-filter>
+                <action android:name="com.stanley.focusflow.ALARM_TRIGGER" />
             </intent-filter>
         </receiver>
             

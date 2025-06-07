@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
@@ -167,7 +166,8 @@ const TaskDetailDialog: React.FC<TaskDetailDialogProps> = ({ task, isOpen, onClo
 
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
-      <DialogContent className="sm:max-w-md max-h-[90vh] overflow-y-auto">
+      <DialogContent className="sm:max-w-[425px] md:max-w-[600px] max-h-[80vh] overflow-y-auto bg-white dark:bg-gray-800 rounded-xl shadow-xl p-0 flex flex-col">
+        <DialogTitle>Task Details - {task.title}</DialogTitle>
         <DialogHeader className="sticky top-0 z-10 bg-background pt-4 pb-2">
           <DialogTitle className="flex items-center justify-between">
             <div className="flex items-center gap-3">

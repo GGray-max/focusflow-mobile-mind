@@ -9,13 +9,20 @@ import { toast } from '@/components/ui/use-toast';
 import VisionEntryDialog from '@/components/vision/VisionEntryDialog';
 import DeleteConfirmDialog from '@/components/vision/DeleteConfirmDialog';
 import ErrorBoundary from '@/components/common/ErrorBoundary';
+import { Dialog, DialogContent, DialogTitle } from '@/components/ui/dialog';
+import { X, Calendar, Check } from 'lucide-react';
+import { Input } from '@/components/ui/input';
 
 const VisionBoardPage: React.FC = () => {
-  const { state, deleteEntry } = useVisionBoard();
+  const { state, deleteEntry, updateEntry } = useVisionBoard();
   const [isAddDialogOpen, setIsAddDialogOpen] = useState(false);
   const [editingEntry, setEditingEntry] = useState<any>(null);
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
   const [entryToDelete, setEntryToDelete] = useState<string | null>(null);
+  const [selectedEntry, setSelectedEntry] = useState<any>(null);
+  const [isDetailModalOpen, setIsDetailModalOpen] = useState(false);
+  const [completionDate, setCompletionDate] = useState<string>("");
+  const [reflectionNote, setReflectionNote] = useState<string>("");
 
   const handleAddClick = () => {
     setEditingEntry(null);
@@ -44,132 +51,301 @@ const VisionBoardPage: React.FC = () => {
     }
   };
 
+  const handleEntryClick = (entry: any) => {
+    setSelectedEntry(entry);
+    setCompletionDate(entry.completedAt || "");
+    setReflectionNote(entry.notes || "");
+    setIsDetailModalOpen(true);
+  };
+
+  const handleMarkAccomplished = () => {
+    if (selectedEntry) {
+      const updatedEntry = {
+        ...selectedEntry,
+        completed: true,
+        completedAt: completionDate || new Date().toISOString(),
+        notes: reflectionNote
+      };
+      updateEntry(updatedEntry);
+      toast({
+        title: "Vision Accomplished",
+        description: `Congratulations on achieving ${updatedEntry.title}!`
+      });
+      setIsDetailModalOpen(false);
+    }
+  };
+
   return (
     <ErrorBoundary>
       <MobileLayout>
         <div className="space-y-6">
-        <div className="flex justify-between items-center">
-          <div>
-            <h1 className="text-3xl font-bold bg-gradient-to-r from-focus-400 to-focus-300 text-transparent bg-clip-text">Vision Board</h1>
-            <p className="text-muted-foreground text-sm">Visualize your goals and dreams</p>
-          </div>
-          
-          <Button 
-            onClick={handleAddClick}
-            className="rounded-full bg-focus-400 hover:bg-focus-500 shadow-md"
-          >
-            <Plus size={18} className="mr-1" /> Add Vision
-          </Button>
-        </div>
-        
-        {state.loading ? (
-          <div className="py-12 flex flex-col items-center justify-center space-y-3">
-            <div className="h-8 w-8 rounded-full border-4 border-focus-300 border-t-transparent animate-spin"></div>
-            <p className="text-muted-foreground text-sm">Loading vision board...</p>
-          </div>
-        ) : state.entries.length === 0 ? (
-          <div className="py-12 flex flex-col items-center justify-center">
-            <div className="bg-gray-100 dark:bg-gray-800 rounded-full p-6 mb-4">
-              <AlertCircle size={40} className="text-gray-400" />
+          <div className="flex justify-between items-center">
+            <div>
+              <h1 className="text-3xl font-bold bg-gradient-to-r from-focus-400 to-focus-300 text-transparent bg-clip-text">Vision Board</h1>
+              <p className="text-muted-foreground text-sm">Visualize your goals and dreams</p>
             </div>
-            <p className="text-muted-foreground text-center max-w-xs mx-auto">
-              Your vision board is empty. Add your goals, dreams, and inspiration to stay motivated.
-            </p>
+            
             <Button 
               onClick={handleAddClick}
-              variant="outline"
-              className="mt-6 border-focus-200 hover:border-focus-400 hover:bg-focus-50"
+              className="rounded-full bg-focus-400 hover:bg-focus-500 shadow-md"
             >
-              <Plus size={16} className="mr-1" /> Create First Vision
+              <Plus size={18} className="mr-1" /> Add Vision
             </Button>
           </div>
-        ) : (
-          <AnimatePresence>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 pb-6">
-              {state.entries.map((entry, index) => (
-                <motion.div
-                  key={entry.id}
-                  initial={{ opacity: 0, y: 20 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  exit={{ opacity: 0, scale: 0.95 }}
-                  transition={{ duration: 0.2, delay: index * 0.05 }}
-                  className="bg-white dark:bg-gray-800 rounded-xl shadow-md overflow-hidden relative group"
-                >
-                  {entry.imageUrl && (
-                    <div className="h-40 overflow-hidden">
-                      <img 
-                        src={entry.imageUrl} 
-                        alt={entry.title} 
-                        className="w-full h-full object-cover transition-transform group-hover:scale-105 duration-300"
-                      />
-                    </div>
-                  )}
-                  
-                  <div className="p-4">
-                    <h3 className="font-semibold text-lg">{entry.title}</h3>
-                    <p className="text-muted-foreground mt-1 text-sm line-clamp-3">{entry.description}</p>
-                    
-                    {entry.category && (
-                      <div className="mt-2">
-                        <span className="inline-block px-2 py-1 text-xs rounded-full bg-focus-100 text-focus-700 dark:bg-focus-900 dark:text-focus-300">
-                          {entry.category}
-                        </span>
+          
+          {state.loading ? (
+            <div className="py-12 flex flex-col items-center justify-center space-y-3">
+              <div className="h-8 w-8 rounded-full border-4 border-focus-300 border-t-transparent animate-spin"></div>
+              <p className="text-muted-foreground text-sm">Loading vision board...</p>
+            </div>
+          ) : state.entries.length === 0 ? (
+            <div className="py-12 flex flex-col items-center justify-center">
+              <div className="bg-gray-100 dark:bg-gray-800 rounded-full p-6 mb-4">
+                <AlertCircle size={40} className="text-gray-400" />
+              </div>
+              <p className="text-muted-foreground text-center max-w-xs mx-auto">
+                Your vision board is empty. Add your goals, dreams, and inspiration to stay motivated.
+              </p>
+              <Button 
+                onClick={handleAddClick}
+                variant="outline"
+                className="mt-6 border-focus-200 hover:border-focus-400 hover:bg-focus-50"
+              >
+                <Plus size={16} className="mr-1" /> Create First Vision
+              </Button>
+            </div>
+          ) : (
+            <AnimatePresence>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4 pb-6">
+                {state.entries.map((entry, index) => (
+                  <motion.div
+                    key={entry.id}
+                    initial={{ opacity: 0, y: 20 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    exit={{ opacity: 0, scale: 0.95 }}
+                    transition={{ duration: 0.2, delay: index * 0.05 }}
+                    className="bg-white dark:bg-gray-800 rounded-xl shadow-md overflow-hidden relative group cursor-pointer"
+                    onClick={() => handleEntryClick(entry)}
+                  >
+                    {entry.imageUrl && (
+                      <div className="h-40 overflow-hidden">
+                        <img 
+                          src={entry.imageUrl} 
+                          alt={entry.title} 
+                          className="w-full h-full object-cover transition-transform group-hover:scale-105 duration-300"
+                        />
                       </div>
                     )}
                     
-                    <div className="flex justify-between items-center mt-3">
-                      <span className="text-xs text-muted-foreground">
-                        {entry.createdAt ? 
-                          (() => {
-                            try {
-                              const date = parseISO(entry.createdAt);
-                              return isValid(date) ? format(date, 'MMM d, yyyy') : 'No date available';
-                            } catch (error) {
-                              console.error('Invalid date format:', entry.createdAt);
-                              return 'No date available';
-                            }
-                          })() 
-                          : 'No date available'}
-                      </span>
+                    <div className="p-4">
+                      <h3 className="font-semibold text-lg">{entry.title}</h3>
+                      <p className="text-muted-foreground mt-1 text-sm line-clamp-3">{entry.description}</p>
                       
-                      <div className="space-x-1">
-                        <Button 
-                          variant="ghost" 
-                          size="icon" 
-                          className="h-8 w-8 rounded-full hover:bg-focus-100 text-gray-500 hover:text-focus-500"
-                          onClick={() => handleEditClick(entry)}
-                        >
-                          <Pencil size={15} />
-                        </Button>
-                        <Button 
-                          variant="ghost" 
-                          size="icon" 
-                          className="h-8 w-8 rounded-full hover:bg-red-100 text-gray-500 hover:text-red-500"
-                          onClick={() => handleDeleteClick(entry.id)}
-                        >
-                          <Trash size={15} />
-                        </Button>
+                      {entry.category && (
+                        <div className="mt-2">
+                          <span className="inline-block px-2 py-1 text-xs rounded-full bg-focus-100 text-focus-700 dark:bg-focus-900 dark:text-focus-300">
+                            {entry.category}
+                          </span>
+                        </div>
+                      )}
+                      
+                      <div className="flex justify-between items-center mt-3">
+                        <span className="text-xs text-muted-foreground">
+                          {entry.createdAt ? 
+                            (() => {
+                              try {
+                                const date = parseISO(entry.createdAt);
+                                return isValid(date) ? format(date, 'MMM d, yyyy') : 'No date available';
+                              } catch (error) {
+                                console.error('Invalid date format:', entry.createdAt);
+                                return 'No date available';
+                              }
+                            })() 
+                            : 'No date available'}
+                        </span>
+                        
+                        <div className="space-x-1">
+                          <Button 
+                            variant="ghost" 
+                            size="icon" 
+                            className="h-8 w-8 rounded-full hover:bg-focus-100 text-gray-500 hover:text-focus-500"
+                            onClick={() => handleEditClick(entry)}
+                          >
+                            <Pencil size={15} />
+                          </Button>
+                          <Button 
+                            variant="ghost" 
+                            size="icon" 
+                            className="h-8 w-8 rounded-full hover:bg-red-100 text-gray-500 hover:text-red-500"
+                            onClick={() => handleDeleteClick(entry.id)}
+                          >
+                            <Trash size={15} />
+                          </Button>
+                        </div>
                       </div>
                     </div>
-                  </div>
-                </motion.div>
-              ))}
-            </div>
-          </AnimatePresence>
-        )}
+                  </motion.div>
+                ))}
+              </div>
+            </AnimatePresence>
+          )}
         </div>
         
-        <VisionEntryDialog
-          isOpen={isAddDialogOpen}
-          onClose={() => setIsAddDialogOpen(false)}
-          editEntry={editingEntry}
-        />
+        <Dialog open={isAddDialogOpen} onOpenChange={setIsAddDialogOpen}>
+          <DialogContent className="sm:max-w-[425px] md:max-w-[600px] max-h-[80vh] overflow-y-auto bg-white dark:bg-gray-800 rounded-xl shadow-xl">
+            <DialogTitle>{editingEntry ? 'Edit Vision Entry' : 'Add Vision Entry'}</DialogTitle>
+            <VisionEntryDialog
+              isOpen={isAddDialogOpen}
+              onClose={() => setIsAddDialogOpen(false)}
+              editEntry={editingEntry}
+            />
+          </DialogContent>
+        </Dialog>
         
         <DeleteConfirmDialog
           isOpen={isDeleteDialogOpen}
           onClose={() => setIsDeleteDialogOpen(false)}
           onConfirm={confirmDelete}
         />
+        
+        <Dialog open={isDetailModalOpen} onOpenChange={setIsDetailModalOpen}>
+          <DialogContent className="sm:max-w-[425px] md:max-w-[600px] max-h-[80vh] overflow-y-auto p-0 bg-white dark:bg-gray-800 rounded-xl shadow-xl">
+            <DialogTitle>View {selectedEntry?.title || 'Vision Entry'}</DialogTitle>
+            {selectedEntry && (
+              <div className="flex flex-col h-full">
+                <div className="relative h-48 sm:h-56 md:h-64 overflow-hidden rounded-t-xl">
+                  {selectedEntry.imageUrl ? (
+                    <img
+                      src={selectedEntry.imageUrl}
+                      alt={selectedEntry.title}
+                      className="w-full h-full object-cover transition-transform duration-300"
+                    />
+                  ) : (
+                    <div className="w-full h-full flex items-center justify-center bg-gray-200 dark:bg-gray-700 text-gray-500 dark:text-gray-400">
+                      <AlertCircle size={48} />
+                    </div>
+                  )}
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    className="absolute top-2 right-2 h-8 w-8 bg-black/50 hover:bg-black/70 text-white rounded-full"
+                    onClick={() => setIsDetailModalOpen(false)}
+                  >
+                    <X size={18} />
+                  </Button>
+                </div>
+                <div className="p-6 flex flex-col flex-grow overflow-y-auto">
+                  <h2 className="text-xl md:text-2xl font-bold text-gray-900 dark:text-white mb-2">{selectedEntry.title}</h2>
+                  <p className="text-sm text-gray-500 dark:text-gray-400 mb-4">
+                    {selectedEntry.createdAt ? 
+                      (() => {
+                        try {
+                          const date = parseISO(selectedEntry.createdAt);
+                          return isValid(date) ? format(date, 'MMMM d, yyyy') : 'No date available';
+                        } catch (error) {
+                          console.error('Invalid date format:', selectedEntry.createdAt);
+                          return 'No date available';
+                        }
+                      })() 
+                      : 'No date available'}
+                  </p>
+                  {selectedEntry.category && (
+                    <span className="inline-block px-3 py-1 text-xs font-medium rounded-full bg-focus-100 text-focus-700 dark:bg-focus-900 dark:text-focus-300 mb-4 w-auto">
+                      {selectedEntry.category}
+                    </span>
+                  )}
+                  <p className="text-gray-700 dark:text-gray-300 text-base leading-relaxed mb-4">{selectedEntry.description}</p>
+                  
+                  {/* Media Playback */}
+                  {selectedEntry.mediaItems && selectedEntry.mediaItems.length > 0 && (
+                    <div className="mb-6 space-y-4">
+                      {selectedEntry.mediaItems.map((media: any) => (
+                        <div key={media.id} className="bg-gray-100 dark:bg-gray-700 rounded-lg p-3">
+                          {media.type === 'audio' && (
+                            <audio controls className="w-full">
+                              <source src={media.url} type="audio/mpeg" />
+                              Your browser does not support the audio element.
+                            </audio>
+                          )}
+                          {media.type === 'video' && (
+                            <video controls className="w-full rounded-lg">
+                              <source src={media.url} type="video/mp4" />
+                              Your browser does not support the video element.
+                            </video>
+                          )}
+                          <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">{media.type} - Added on {media.createdAt ? format(parseISO(media.createdAt), 'MMM d, yyyy') : 'N/A'}</p>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                  
+                  {/* Accomplishment Section */}
+                  {!selectedEntry.completed && (
+                    <div className="border-t border-gray-200 dark:border-gray-700 pt-4 mt-4">
+                      <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-3">Mark as Accomplished</h3>
+                      <div className="space-y-3">
+                        <div className="relative">
+                          <Input
+                            type="date"
+                            value={completionDate.split('T')[0] || ''}
+                            onChange={(e) => setCompletionDate(e.target.value)}
+                            className="w-full rounded-md border-gray-300 dark:border-gray-600"
+                            placeholder="Select completion date"
+                          />
+                          <Calendar size={18} className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400" />
+                        </div>
+                        <Input
+                          type="text"
+                          value={reflectionNote}
+                          onChange={(e) => setReflectionNote(e.target.value)}
+                          className="w-full rounded-md border-gray-300 dark:border-gray-600"
+                          placeholder="Add a reflection or note about this achievement"
+                        />
+                        <Button
+                          onClick={handleMarkAccomplished}
+                          className="w-full rounded-md bg-focus-400 hover:bg-focus-500"
+                          disabled={!completionDate}
+                        >
+                          <Check size={16} className="mr-1" /> Mark as Accomplished
+                        </Button>
+                      </div>
+                    </div>
+                  )}
+                  {selectedEntry.completed && (
+                    <div className="border-t border-gray-200 dark:border-gray-700 pt-4 mt-4">
+                      <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-3">Accomplished</h3>
+                      <p className="text-gray-700 dark:text-gray-300">Completed on: {selectedEntry.completedAt ? format(parseISO(selectedEntry.completedAt), 'MMMM d, yyyy') : 'N/A'}</p>
+                      {selectedEntry.notes && <p className="text-gray-700 dark:text-gray-300 mt-2">Reflection: {selectedEntry.notes}</p>}
+                    </div>
+                  )}
+                  
+                  <div className="flex gap-2 mt-6 justify-end">
+                    <Button
+                      variant="outline"
+                      onClick={() => {
+                        setIsDetailModalOpen(false);
+                        handleEditClick(selectedEntry);
+                      }}
+                      className="rounded-md border-focus-200 hover:border-focus-400 hover:bg-focus-50"
+                    >
+                      <Pencil size={16} className="mr-1" /> Edit
+                    </Button>
+                    <Button
+                      variant="destructive"
+                      onClick={() => {
+                        setIsDetailModalOpen(false);
+                        handleDeleteClick(selectedEntry.id);
+                      }}
+                      className="rounded-md bg-red-500 hover:bg-red-600"
+                    >
+                      <Trash size={16} className="mr-1" /> Delete
+                    </Button>
+                  </div>
+                </div>
+              </div>
+            )}
+          </DialogContent>
+        </Dialog>
       </MobileLayout>
     </ErrorBoundary>
   );

@@ -1,6 +1,5 @@
-
 import React, { useEffect, useState } from 'react';
-import { Dialog, DialogContent, DialogFooter } from '@/components/ui/dialog';
+import { Dialog, DialogContent, DialogTitle, DialogFooter } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { Mic } from 'lucide-react';
 import { motion } from 'framer-motion';
@@ -105,6 +104,7 @@ const SpeechRecognition: React.FC<SpeechRecognitionProps> = ({ isActive, onSpeec
   return (
     <Dialog open={isActive} onOpenChange={onCancel}>
       <DialogContent className="sm:max-w-md text-center">
+        <DialogTitle>Voice Input</DialogTitle>
         <div className="flex flex-col items-center justify-center pt-6 pb-4">
           <motion.div
             animate={{

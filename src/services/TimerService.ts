@@ -1,4 +1,4 @@
-import { registerPlugin } from '@capacitor/core';
+import { registerPlugin, Capacitor } from '@capacitor/core';
 import NotificationService from './NotificationService';
 
 interface TimerPluginInterface {
@@ -14,7 +14,161 @@ interface PluginListenerHandle {
   remove: () => Promise<void>;
 }
 
-const TimerPlugin = registerPlugin<TimerPluginInterface>('TimerPlugin');
+// Web fallback implementation
+class WebTimerPlugin implements TimerPluginInterface {
+  private timerId: number | null = null;
+  private listeners: {[event: string]: Array<(data: any) => void>} = {};
+  private startTime: number = 0;
+  private duration: number = 0;
+  private timeRemaining: number = 0;
+  private taskName: string = 'Focus Session';
+  private taskId?: string;
+  private isRunning: boolean = false;
+  private isPaused: boolean = false;
+  private lastUpdateTime: number = 0;
+  private updateInterval: number = 1000; // Update every second
+
+  async startTimer(options: { durationSeconds: number; taskName?: string; taskId?: string }): Promise<{ success: boolean; durationSeconds: number }> {
+    if (this.isRunning) return { success: false, durationSeconds: 0 };
+    
+    this.duration = options.durationSeconds * 1000;
+    this.timeRemaining = this.duration;
+    this.taskName = options.taskName || 'Focus Session';
+    this.taskId = options.taskId;
+    this.isRunning = true;
+    this.isPaused = false;
+    this.startTime = Date.now();
+    this.lastUpdateTime = this.startTime;
+    
+    // Emit started event
+    this.emitEvent('timerStarted', {
+      duration: this.duration,
+      startTime: this.startTime,
+      taskId: this.taskId,
+      taskName: this.taskName
+    });
+    
+    // Start the timer
+    this.timerId = window.setInterval(() => this.updateTimer(), this.updateInterval);
+    
+    return { success: true, durationSeconds: options.durationSeconds };
+  }
+  
+  async pauseTimer(): Promise<{ success: boolean }> {
+    if (!this.isRunning || this.isPaused) return { success: false };
+    
+    clearInterval(this.timerId!);
+    this.isPaused = true;
+    this.isRunning = false;
+    
+    // Calculate time spent in this session
+    const timeSpent = Date.now() - this.lastUpdateTime;
+    this.timeRemaining = Math.max(0, this.timeRemaining - timeSpent);
+    
+    this.emitEvent('timerPaused', {
+      timeRemaining: this.timeRemaining,
+      taskId: this.taskId
+    });
+    
+    return { success: true };
+  }
+  
+  async resumeTimer(): Promise<{ success: boolean }> {
+    if (!this.isPaused || this.isRunning) return { success: false };
+    
+    this.isRunning = true;
+    this.isPaused = false;
+    this.lastUpdateTime = Date.now();
+    
+    // Restart the timer
+    this.timerId = window.setInterval(() => this.updateTimer(), this.updateInterval);
+    
+    this.emitEvent('timerResumed', {
+      timeRemaining: this.timeRemaining,
+      taskId: this.taskId
+    });
+    
+    return { success: true };
+  }
+  
+  async stopTimer(): Promise<{ success: boolean }> {
+    if (this.timerId) {
+      clearInterval(this.timerId);
+      this.timerId = null;
+    }
+    
+    const wasRunning = this.isRunning;
+    this.isRunning = false;
+    this.isPaused = false;
+    
+    if (wasRunning) {
+      this.emitEvent('timerStopped', {
+        taskId: this.taskId,
+        timeSpent: this.duration - this.timeRemaining
+      });
+    }
+    
+    return { success: true };
+  }
+  
+  async getTimerStatus(): Promise<{ isRunning: boolean }> {
+    return { isRunning: this.isRunning };
+  }
+  
+  addListener(eventName: string, listenerFunc: (data: any) => void): PluginListenerHandle {
+    if (!this.listeners[eventName]) {
+      this.listeners[eventName] = [];
+    }
+    this.listeners[eventName].push(listenerFunc);
+    
+    return {
+      remove: async () => {
+        this.listeners[eventName] = this.listeners[eventName].filter(fn => fn !== listenerFunc);
+      }
+    };
+  }
+  
+  private emitEvent(eventName: string, data: any) {
+    const listeners = this.listeners[eventName] || [];
+    for (const listener of listeners) {
+      try {
+        listener(data);
+      } catch (e) {
+        console.error(`Error in ${eventName} listener:`, e);
+      }
+    }
+  }
+  
+  private updateTimer() {
+    const now = Date.now();
+    const elapsed = now - this.lastUpdateTime;
+    this.lastUpdateTime = now;
+    
+    this.timeRemaining = Math.max(0, this.timeRemaining - elapsed);
+    
+    // Emit update
+    this.emitEvent('timerUpdate', {
+      timeRemaining: this.timeRemaining,
+      totalTime: this.duration,
+      taskId: this.taskId
+    });
+    
+    // Check if timer finished
+    if (this.timeRemaining <= 0) {
+      clearInterval(this.timerId!);
+      this.isRunning = false;
+      this.emitEvent('timerFinished', {
+        taskId: this.taskId,
+        taskName: this.taskName
+      });
+    }
+  }
+}
+
+// Use the native plugin if available, otherwise fall back to web implementation
+const TimerPlugin = Capacitor.isNativePlatform() 
+  ? registerPlugin<TimerPluginInterface>('TimerPlugin')
+  : new WebTimerPlugin();
 
 // Format time function helper
 const formatTime = (milliseconds: number) => {

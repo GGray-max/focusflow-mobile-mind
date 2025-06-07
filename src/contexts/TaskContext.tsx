@@ -91,6 +91,30 @@ const initialState: TaskState = {
   tasksPerPage: 10
 };
 
+// Helper function to calculate next due date based on recurrence
+const calculateNextDueDate = (dateString: string | undefined, recurrence: string): Date => {
+  if (!dateString) return new Date();
+  
+  const date = new Date(dateString);
+  const nextDate = new Date(date);
+  
+  switch (recurrence) {
+    case 'daily':
+      nextDate.setDate(date.getDate() + 1);
+      break;
+    case 'weekly':
+      nextDate.setDate(date.getDate() + 7);
+      break;
+    case 'monthly':
+      nextDate.setMonth(date.getMonth() + 1);
+      break;
+    default:
+      return date;
+  }
+  
+  return nextDate;
+};
+
 const taskReducer = (state: TaskState, action: TaskAction): TaskState => {
   switch (action.type) {
     case 'ADD_FOCUS_TIME':
@@ -123,10 +147,39 @@ const taskReducer = (state: TaskState, action: TaskAction): TaskState => {
         tasks: [action.payload, ...state.tasks],
       };
     case 'UPDATE_TASK':
+      // Check if we're completing a recurring task
+      if (action.payload.completed && !state.tasks.find(t => t.id === action.payload.id)?.completed) {
+        const task = state.tasks.find(t => t.id === action.payload.id);
+        if (task?.recurrence && task.recurrence !== 'none') {
+          const nextDueDate = calculateNextDueDate(task.dueDate, task.recurrence);
+          
+          // Create a new instance of the task for the next recurrence
+          const newTask: Task = {
+            ...task,
+            id: `${task.id}-${Date.now()}`,
+            completed: false,
+            dueDate: nextDueDate.toISOString().split('T')[0],
+            lastCompleted: new Date().toISOString(),
+            completedAt: undefined,
+            subtasks: task.subtasks.map(st => ({ ...st, completed: false }))
+          };
+          
+          return {
+            ...state,
+            tasks: [
+              ...state.tasks.map(t => 
+                t.id === action.payload.id ? { ...action.payload, lastCompleted: new Date().toISOString() } : t
+              ),
+              newTask
+            ],
+          };
+        }
+      }
+      
       return {
         ...state,
-        tasks: state.tasks.map((task) =>
-          task.id === action.payload.id ? action.payload : task
+        tasks: state.tasks.map(task =>
+          task.id === action.payload.id ? { ...action.payload } : task
         ),
       };
     case 'DELETE_TASK':
@@ -508,57 +561,87 @@ export const TaskProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     dispatch({ type: 'DELETE_TASK', payload: id });
   };
 
+  const calculateNextOccurrence = (task: Task): string | undefined => {
+    if (!task.dueDate || !task.recurrence || task.recurrence === 'none') {
+      return undefined;
+    }
+
+    const currentDate = new Date(task.dueDate);
+    const nextDate = new Date(currentDate);
+    
+    switch (task.recurrence) {
+      case 'daily':
+        nextDate.setDate(currentDate.getDate() + 1);
+        break;
+      case 'weekly':
+        nextDate.setDate(currentDate.getDate() + 7);
+        break;
+      case 'monthly':
+        nextDate.setMonth(currentDate.getMonth() + 1);
+        // Handle edge case where the next month has fewer days
+        if (nextDate.getDate() !== currentDate.getDate()) {
+          nextDate.setDate(0); // Last day of the month
+        }
+        break;
+    }
+    
+    return nextDate.toISOString().split('T')[0];
+  };
+
   const toggleComplete = (id: string) => {
     const task = state.tasks.find(t => t.id === id);
-    
     if (!task) return;
     
-    // Handle streak tracking for daily recurring tasks
-    if (task.recurrence === 'daily') {
-      // Get current date (midnight for comparison)
-      const today = new Date();
-      today.setHours(0, 0, 0, 0);
+    // If completing a recurring task, create a new instance for the next occurrence
+    if (!task.completed && task.recurrence && task.recurrence !== 'none') {
+      const nextDueDate = calculateNextOccurrence(task);
       
-      // Check if the task is being completed or uncompleted
-      if (!task.completed) {
-        // Task is being completed - update streak
-        const lastCompletedDate = task.lastCompleted ? new Date(task.lastCompleted) : null;
-        if (lastCompletedDate) {
-          lastCompletedDate.setHours(0, 0, 0, 0);
-        }
-        
-        // Calculate the date of yesterday
-        const yesterday = new Date(today);
-        yesterday.setDate(yesterday.getDate() - 1);
-        
-        let newStreak = task.streak || 0;
-        
-        // If last completed date was yesterday, increment streak
-        if (lastCompletedDate && lastCompletedDate.getTime() === yesterday.getTime()) {
-          newStreak += 1;
-        } 
-        // If it wasn't completed yesterday (or ever), reset streak to 1
-        else {
-          newStreak = 1;
-        }
-        
-        // Update the task with new streak and lastCompleted date
-        const updatedTask = {
+      if (nextDueDate) {
+        // Create a new task for the next occurrence
+        const newTask: Omit<Task, 'id' | 'createdAt'> = {
           ...task,
-          streak: newStreak,
-          lastCompleted: today.toISOString(),
-          completed: true,
-          completedAt: new Date().toISOString()
+          completed: false,
+          completedAt: undefined,
+          dueDate: nextDueDate,
+          isPriority: task.isPriority,
+          streak: (task.streak || 0) + 1,
+          focusSessions: [],
+          lastCompleted: new Date().toISOString(),
+          totalTimeSpent: 0
         };
         
-        // Update the task instead of just toggling completion
-        updateTask(updatedTask);
-        return; // Early return since we're handling the update
+        // Add the new task
+        addTask(newTask);
+        
+        // Update the current task to be completed
+        const updatedTask = {
+          ...task,
+          completed: true,
+          completedAt: new Date().toISOString(),
+          lastCompleted: new Date().toISOString()
+        };
+        
+        // Dispatch the update action
+        dispatch({ type: 'UPDATE_TASK', payload: updatedTask });
+        return; // Early return since we've handled the update
       }
     }
     
-    // Default behavior for non-daily tasks or uncompleting tasks
-    dispatch({ type: 'TOGGLE_COMPLETE', payload: id });
+    // For non-recurring tasks or uncompleting tasks
+    const updatedTask = {
+      ...task,
+      completed: !task.completed,
+      completedAt: task.completed ? undefined : new Date().toISOString(),
+      lastCompleted: !task.completed ? new Date().toISOString() : task.lastCompleted
+    };
+    
+    // If un-completing, revert the streak
+    if (task.completed && task.recurrence && task.recurrence !== 'none') {
+      updatedTask.streak = Math.max(0, (task.streak || 1) - 1);
+    }
+    
+    // Dispatch the update action
+    dispatch({ type: 'UPDATE_TASK', payload: updatedTask });
     
     // If completing a non-recurring task, cancel any notifications
     if (!task.completed && (!task.recurrence || task.recurrence === 'none')) {

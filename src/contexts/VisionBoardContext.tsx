@@ -1,4 +1,5 @@
 import React, { createContext, useContext, useReducer, useEffect, ReactNode } from 'react';
+import { get, set } from 'idb-keyval';
 
 // Media Item Type
 export interface MediaItem {
@@ -45,6 +46,9 @@ export interface VisionBoardEntry {
   successCriteria?: string; // What success looks like
   targetDate?: string; // Overall target date
   progressPercentage?: number; // Calculated progress
+  completed?: boolean;
+  completedAt?: string;
+  notes?: string;
 }
 
 // Vision Board State
@@ -148,31 +152,63 @@ const VisionBoardContext = createContext<VisionBoardContextType | undefined>(und
 export const VisionBoardProvider: React.FC<{ children: ReactNode }> = ({ children }) => {
   const [state, dispatch] = useReducer(visionBoardReducer, initialState);
 
-  // Load entries from localStorage on initial render
+  // Determine storage method (assuming web for now due to missing mobile storage dependencies)
+  const isWeb = true; // Hardcoded to true as mobile storage solution is not currently available
+
+  // Load entries from IndexedDB on initial render with migration from localStorage
   useEffect(() => {
-    const loadEntries = () => {
+    const loadEntries = async () => {
       try {
-        const savedEntries = localStorage.getItem('visionBoardEntries');
+        let savedEntries = null;
+        if (isWeb) {
+          // Check for old localStorage data for migration
+          const oldLocalStorageData = localStorage.getItem('visionBoardEntries');
+          if (oldLocalStorageData) {
+            console.log('Migrating vision board data from localStorage to IndexedDB');
+            savedEntries = JSON.parse(oldLocalStorageData);
+            // Save to IndexedDB
+            await set('visionBoardEntries', savedEntries);
+            // Clear old localStorage to free space
+            localStorage.removeItem('visionBoardEntries');
+          } else {
+            savedEntries = await get('visionBoardEntries');
+          }
+        } else {
+          console.warn('Mobile storage solution not implemented. Vision board data may not persist on mobile devices.');
+          savedEntries = null;
+        }
         if (savedEntries) {
-          dispatch({ type: 'LOAD_ENTRIES', payload: JSON.parse(savedEntries) });
+          dispatch({ type: 'LOAD_ENTRIES', payload: savedEntries });
         } else {
           dispatch({ type: 'LOAD_ENTRIES', payload: [] });
         }
       } catch (error) {
-        console.error("Failed to load vision board entries:", error);
-        dispatch({ type: 'SET_ERROR', payload: 'Failed to load vision board entries' });
+        console.error('Error loading vision board entries:', error);
+        dispatch({ type: 'SET_ERROR', payload: 'Failed to load vision board data' });
       }
     };
 
     loadEntries();
-  }, []);
+  }, [isWeb]);
 
-  // Save entries to localStorage whenever they change
+  // Save entries to storage whenever they change
   useEffect(() => {
     if (!state.loading) {
-      localStorage.setItem('visionBoardEntries', JSON.stringify(state.entries));
+      const saveEntries = async () => {
+        try {
+          if (isWeb) {
+            await set('visionBoardEntries', state.entries);
+          } else {
+            console.warn('Mobile storage solution not implemented. Vision board data may not be saved on mobile devices.');
+          }
+        } catch (error) {
+          console.error('Error saving vision board entries:', error);
+          dispatch({ type: 'SET_ERROR', payload: 'Failed to save vision board data' });
+        }
+      };
+      saveEntries();
     }
-  }, [state.entries, state.loading]);
+  }, [state.entries, state.loading, isWeb]);
 
   // Add a new entry
   const addEntry = (entry: Omit<VisionBoardEntry, 'id' | 'createdAt'>) => {
