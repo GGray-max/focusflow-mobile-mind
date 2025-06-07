@@ -1,3 +1,4 @@
+
 import React, { createContext, useContext, useReducer, useEffect, ReactNode } from 'react';
 import { get, set } from 'idb-keyval';
 
@@ -7,6 +8,7 @@ export interface MediaItem {
   type: 'image' | 'audio' | 'video'; // Type of media
   url: string;  // URL or data URI of the media
   thumbnail?: string; // Optional thumbnail for videos
+  mimeType?: string; // MIME type of the media file
   createdAt: string; // Date added
 }
 
@@ -17,6 +19,7 @@ export interface Milestone {
   dueDate: string; // Target date
   completed: boolean; // Whether it's been achieved
   completedAt?: string; // When it was completed
+  createdAt?: string; // When it was created
   notes?: string; // Any additional notes
 }
 
