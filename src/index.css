@@ -259,3 +259,10 @@ html, body, #root {
   inset: 0;
   overflow: hidden;
 }
+
+/* Hide any unwanted fixed top bars */
+.fixed.top-0.bg-blue-50,
+div[class*="fixed top-0"][class*="bg-blue-50"],
+div[class*="fixed"][class*="top-0"][class*="bg-blue-50"] {
+  display: none !important;
+}

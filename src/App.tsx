@@ -1,4 +1,3 @@
-
 import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
@@ -52,14 +51,14 @@ const App = () => {
     };
 
     initializeNotifications();
-    
+
     // Watch for system theme changes if no preference is saved
     if (!('darkMode' in localStorage)) {
       const darkModeMediaQuery = window.matchMedia('(prefers-color-scheme: dark)');
       const handleChange = (e: MediaQueryListEvent) => {
         // Theme is now handled by ThemeProvider
       };
-      
+
       darkModeMediaQuery.addEventListener('change', handleChange);
       return () => darkModeMediaQuery.removeEventListener('change', handleChange);
     }
@@ -88,7 +87,7 @@ const App = () => {
                           {showLoader && <AppLoader onFinished={() => setShowLoader(false)} />}
                           <Toaster />
                           <Sonner />
-                          <PersistentNotificationBar message="" type="info" />
+                          
                           <Routes>
                             <Route path="/" element={
                               <ErrorBoundary>

@@ -31,7 +31,7 @@ const MobileLayout: React.FC<MobileLayoutProps> = ({ children }) => {
         className="h-full overflow-y-auto overflow-x-hidden" 
         style={{ 
           paddingBottom: '80px',
-          height: 'calc(100vh - 80px)',
+          height: '100vh',
           margin: 0,
           padding: '0 0 80px 0'
         }}
