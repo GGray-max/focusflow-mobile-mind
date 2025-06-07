@@ -216,18 +216,35 @@ html, body {
   overflow-x: hidden;
 }
 
-/* Ensure themes work properly */
+/* Ensure themes work properly with proper color variables */
 [data-theme='light'] {
-  background-color: hsl(0, 0%, 100%);
-  color: hsl(222.2, 84%, 4.9%);
+  background-color: hsl(var(--background));
+  color: hsl(var(--foreground));
 }
 
 [data-theme='dark'] {
-  background-color: hsl(222.2, 84%, 4.9%);
-  color: hsl(210, 40%, 98%);
+  background-color: hsl(var(--background));
+  color: hsl(var(--foreground));
 }
 
 [data-theme='blue'] {
-  background-color: hsl(214, 100%, 97%);
-  color: hsl(214, 100%, 15%);
+  background-color: hsl(var(--background));
+  color: hsl(var(--foreground));
+}
+
+/* Ensure all elements inherit theme colors properly */
+[data-theme] * {
+  border-color: hsl(var(--border));
+}
+
+[data-theme] input,
+[data-theme] textarea,
+[data-theme] select {
+  background-color: hsl(var(--background));
+  color: hsl(var(--foreground));
+  border-color: hsl(var(--border));
+}
+
+[data-theme] button:not(.bg-primary):not(.bg-secondary):not(.bg-accent) {
+  color: hsl(var(--foreground));
 }

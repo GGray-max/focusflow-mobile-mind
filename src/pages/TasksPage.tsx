@@ -33,28 +33,28 @@ const TasksPage: React.FC = () => {
   const [isAddTaskDialogOpen, setIsAddTaskDialogOpen] = useState(false);
   const [selectedTask, setSelectedTask] = useState<Task | null>(null);
   const [isVoiceInputActive, setIsVoiceInputActive] = useState(false);
-  
+
   // Filter and view states
   const [showOnlyPriority, setShowOnlyPriority] = useState(false);
   const [showMonthlyTasks, setShowMonthlyTasks] = useState(false);
   const [activeTab, setActiveTab] = useState('today');
   const [searchQuery, setSearchQuery] = useState('');
-  
+
   // Helper function to compare dates by day (ignoring time)
   const isSameDay = (date1: string, date2: string): boolean => {
     return new Date(date1).toDateString() === new Date(date2).toDateString();
   };
-  
+
   // Helper function to check if a date is in the future
   const isFutureDate = (dateStr: string): boolean => {
     const today = new Date();
     const date = new Date(dateStr);
     return date > new Date(today.setHours(0, 0, 0, 0));
   };
-  
+
   // Get today's date in YYYY-MM-DD format
   const today = new Date().toISOString().split('T')[0];
-  
+
   // Get task context and state
   const { 
     state: { tasks, loading, currentPage, tasksPerPage },
@@ -65,10 +65,10 @@ const TasksPage: React.FC = () => {
     setSearchTerm,
     getFilteredAndSortedTasks // This is the function from context
   } = useTasks();
-  
+
   // Use the getFilteredAndSortedTasks from context directly
   const allTasks = React.useMemo(() => getFilteredAndSortedTasks(), [getFilteredAndSortedTasks]);
-  
+
   // Helper to check if a task is due on a specific date
   const isTaskDueOnDate = (task: Task, date: string): boolean => {
     if (!task.dueDate) return false;
@@ -89,21 +89,21 @@ const TasksPage: React.FC = () => {
     task.dueDate && 
     isTaskDueOnDate(task, today)
   );
-  
+
   const upcomingTasks = allTasks.filter(task => 
     !task.completed && 
     task.dueDate && 
     isFutureDate(task.dueDate) && 
     !isTaskDueOnDate(task, today)
   );
-  
+
   const otherTasks = allTasks.filter(task => 
     !task.completed && 
     (!task.dueDate || isTaskOverdue(task))
   );
-  
+
   const completedTasks = allTasks.filter(task => task.completed);
-  
+
   // Get tasks for the active tab
   const getTasksForActiveTab = useCallback(() => {
     switch (activeTab) {
@@ -119,62 +119,62 @@ const TasksPage: React.FC = () => {
         return [];
     }
   }, [activeTab, todaysTasks, upcomingTasks, allTasks, completedTasks]);
-  
+
   // Get current tasks for the active tab with memoization
   const currentTasks = React.useMemo(() => getTasksForActiveTab(), [getTasksForActiveTab]);
-  
+
   // Calculate pagination
   const totalPages = Math.ceil(currentTasks.length / tasksPerPage) || 1;
   const currentPageNum = Math.min(currentPage, Math.max(1, totalPages));
-  
+
   // Get paginated tasks with bounds checking
   const paginatedTasks = React.useMemo(() => {
     const start = (currentPageNum - 1) * tasksPerPage;
     const end = currentPageNum * tasksPerPage;
     return currentTasks.slice(start, end);
   }, [currentTasks, currentPageNum, tasksPerPage]);
-  
+
   // Update page if it was out of bounds
   useEffect(() => {
     if (currentPage !== currentPageNum) {
       setPage(currentPageNum);
     }
   }, [currentPage, currentPageNum, setPage]);
-  
+
   // Handle page change with bounds checking
   const handlePageChange = useCallback((newPage: number) => {
     const page = Math.max(1, Math.min(newPage, totalPages));
     setPage(page);
   }, [setPage, totalPages]);
-  
+
   // Reset to first page when search query changes
   useEffect(() => {
     if (searchQuery) {
       setPage(1);
     }
   }, [searchQuery, setPage]);
-  
+
   // Handle search input change
   const handleSearchChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     setSearchQuery(e.target.value);
   };
-  
+
   // Toggle voice input
   const toggleVoiceInput = () => {
     setIsVoiceInputActive(!isVoiceInputActive);
     // In a real app, you would integrate with a speech recognition API here
   };
-  
+
   // Handle task completion toggle
   const handleToggleComplete = useCallback((taskId: string) => {
     toggleComplete(taskId);
   }, [toggleComplete]);
-  
+
   // Handle task priority toggle
   const handleTogglePriority = useCallback((taskId: string) => {
     togglePriority(taskId);
   }, [togglePriority]);
-  
+
   // Voice recognition callback
   const handleSpeechResult = (text: string) => {
     if (text) {
@@ -204,7 +204,7 @@ const TasksPage: React.FC = () => {
         setSearchQuery(text);
       }
     }
-    
+
     setIsVoiceInputActive(false);
   };
 
@@ -213,7 +213,7 @@ const TasksPage: React.FC = () => {
     const timer = setTimeout(() => {
       setSearchTerm(searchQuery);
     }, 300);
-    
+
     return () => clearTimeout(timer);
   }, [searchQuery, setSearchTerm]);
 
@@ -224,7 +224,7 @@ const TasksPage: React.FC = () => {
     showOtherTasks?: boolean;
   } = {}) => {
     const { header, emptyMessage, showOtherTasks = false } = options;
-    
+
     if (loading) {
       return (
         <div className="flex justify-center py-8">
@@ -232,10 +232,10 @@ const TasksPage: React.FC = () => {
         </div>
       );
     }
-    
+
     const hasTasks = tasks.length > 0;
     const hasOtherTasks = showOtherTasks && otherTasks.length > 0;
-    
+
     if (!hasTasks && !hasOtherTasks) {
       return (
         <div className="text-center py-8 text-muted-foreground">
@@ -243,13 +243,13 @@ const TasksPage: React.FC = () => {
         </div>
       );
     }
-    
+
     return (
       <div className="space-y-4">
         {header && (
           <h3 className="text-sm font-medium text-muted-foreground">{header}</h3>
         )}
-        
+
         <div className="space-y-2">
           {hasTasks ? (
             <AnimatePresence>
@@ -271,7 +271,7 @@ const TasksPage: React.FC = () => {
               ))}
             </AnimatePresence>
           ) : null}
-          
+
           {showOtherTasks && hasOtherTasks && (
             <div className="mt-6 space-y-3">
               <h3 className="text-sm font-medium text-muted-foreground">Other Tasks</h3>
@@ -295,7 +295,7 @@ const TasksPage: React.FC = () => {
             </div>
           )}
         </div>  
-          
+
           {totalPages > 1 && (
             <div className="mt-4 flex justify-center items-center gap-4">
               <Button
@@ -329,7 +329,7 @@ const TasksPage: React.FC = () => {
     try {
       // Fix: Convert string to Date if needed
       const dueDate = typeof task.dueDate === 'string' ? new Date(task.dueDate) : task.dueDate || new Date(Date.now() + 60 * 1000);
-      
+
       await scheduleNotification({
         title: task.title,
         body: 'Task reminder',
@@ -351,7 +351,10 @@ const TasksPage: React.FC = () => {
 
   return (
     <MobileLayout>
-    <div className="space-y-4 p-4 max-w-4xl mx-auto">
+      <div className="flex flex-col h-full bg-background">
+        {/* Header */}
+        <div className="sticky top-0 bg-background/95 backdrop-blur-md z-40 pb-4 px-4">
+          <div className="space-y-4 p-4 max-w-4xl mx-auto">
       {/* Header */}
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
         <div>
@@ -360,7 +363,7 @@ const TasksPage: React.FC = () => {
           </h1>
           <p className="text-muted-foreground">Manage your tasks and stay productive</p>
         </div>
-        
+
         <div className="flex items-center gap-2">
           <Button 
             variant="outline" 
@@ -374,7 +377,7 @@ const TasksPage: React.FC = () => {
           >
             <Star size={18} className={showOnlyPriority ? 'fill-current' : ''} />
           </Button>
-          
+
           <Button 
             variant="outline" 
             size="icon" 
@@ -387,7 +390,7 @@ const TasksPage: React.FC = () => {
           >
             <Calendar size={18} />
           </Button>
-          
+
           <Button
             onClick={() => setIsAddTaskDialogOpen(true)}
             className="rounded-full w-14 h-14 shadow-lg"
@@ -402,7 +405,7 @@ const TasksPage: React.FC = () => {
           </Button>
         </div>
       </div>
-      
+
       {/* Search */}
       <div className="relative">
         <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
@@ -426,7 +429,7 @@ const TasksPage: React.FC = () => {
           <Mic size={18} className={isVoiceInputActive ? 'animate-pulse' : ''} />
         </Button>
       </div>
-      
+
       {/* Tabs */}
       <Tabs 
         value={activeTab} 
@@ -454,20 +457,20 @@ const TasksPage: React.FC = () => {
             <span className="hidden sm:inline">Completed</span>
           </TabsTrigger>
         </TabsList>
-        
+
         <div className="mt-4">
           <TabsContent value="today">
             {renderTaskList(todaysTasks, { showOtherTasks: true })}
           </TabsContent>
-          
+
           <TabsContent value="upcoming">
             {renderTaskList(upcomingTasks, { showOtherTasks: true })}
           </TabsContent>
-          
+
           <TabsContent value="all">
             {renderTaskList(allTasks.filter(task => !task.completed), { showOtherTasks: true })}
           </TabsContent>
-          
+
           <TabsContent value="completed">
             {renderTaskList(completedTasks)}
           </TabsContent>
@@ -479,7 +482,7 @@ const TasksPage: React.FC = () => {
         isOpen={isAddTaskDialogOpen} 
         onClose={() => setIsAddTaskDialogOpen(false)} 
       />
-      
+
       {/* Task Detail Dialog */}
       {selectedTask && (
         <TaskDetailDialog
@@ -488,7 +491,7 @@ const TasksPage: React.FC = () => {
           onClose={() => setSelectedTask(null)}
         />
       )}
-      
+
       {/* Voice Recognition UI */}
       {isVoiceInputActive && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">

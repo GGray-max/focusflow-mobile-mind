@@ -43,7 +43,7 @@ const MobileLayout: React.FC<MobileLayoutProps> = ({ children }) => {
             animate={{ opacity: 1, y: 0 }}
             exit={{ opacity: 0, y: -20 }}
             transition={{ duration: 0.4, ease: "easeInOut" }}
-            className="min-h-full w-full p-4"
+            className="min-h-full w-full"
           >
             {children}
           </motion.div>

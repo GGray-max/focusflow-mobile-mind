@@ -123,26 +123,36 @@
   }
 
   [data-theme='blue'] {
-    /* Blue theme - Distinctly blue */
-    --background: 210 100% 95%;
-    --foreground: 210 100% 10%;
-    --card: 210 100% 98%;
-    --card-foreground: 210 100% 10%;
-    --popover: 210 100% 98%;
-    --popover-foreground: 210 100% 10%;
-    --primary: 210 100% 50%;
+    /* Blue theme - Distinctly blue with better contrast */
+    --background: 210 100% 98%;
+    --foreground: 210 100% 8%;
+    --card: 210 100% 100%;
+    --card-foreground: 210 100% 8%;
+    --popover: 210 100% 100%;
+    --popover-foreground: 210 100% 8%;
+    --primary: 210 100% 45%;
     --primary-foreground: 0 0% 100%;
-    --secondary: 210 60% 85%;
-    --secondary-foreground: 210 100% 15%;
-    --muted: 210 60% 85%;
-    --muted-foreground: 210 50% 40%;
-    --accent: 210 60% 85%;
-    --accent-foreground: 210 100% 15%;
+    --secondary: 210 40% 90%;
+    --secondary-foreground: 210 100% 12%;
+    --muted: 210 40% 90%;
+    --muted-foreground: 210 50% 30%;
+    --accent: 210 40% 90%;
+    --accent-foreground: 210 100% 12%;
     --destructive: 0 84.2% 60.2%;
     --destructive-foreground: 210 40% 98%;
-    --border: 210 60% 80%;
-    --input: 210 60% 80%;
-    --ring: 210 100% 50%;
+    --border: 210 30% 85%;
+    --input: 210 30% 85%;
+    --ring: 210 100% 45%;
+    
+    /* Sidebar - Blue Mode */
+    --sidebar-background: 210 100% 98%;
+    --sidebar-foreground: 210 100% 8%;
+    --sidebar-primary: 210 100% 45%;
+    --sidebar-primary-foreground: 0 0% 100%;
+    --sidebar-accent: 210 40% 90%;
+    --sidebar-accent-foreground: 210 100% 12%;
+    --sidebar-border: 210 30% 85%;
+    --sidebar-ring: 210 100% 45%;
   }
 }
 
@@ -163,27 +173,55 @@ html {
   color: inherit;
 }
 
-/* Force text visibility */
-p, span, div, label, input, textarea, select, button {
+/* Force text visibility with proper specificity */
+* {
+  color: inherit;
+}
+
+p, span, div, label, input, textarea, select, button, h1, h2, h3, h4, h5, h6 {
   color: hsl(var(--foreground)) !important;
+}
+
+/* Specific overrides for muted text */
+.text-muted-foreground,
+.text-muted-foreground * {
+  color: hsl(var(--muted-foreground)) !important;
+}
+
+/* Specific overrides for primary text */
+.text-primary,
+.text-primary * {
+  color: hsl(var(--primary)) !important;
 }
 
 /* Ensure buttons have proper contrast */
 button {
   font-weight: 500;
-}
-
-/* Make sure all text is readable */
-.text-foreground {
   color: hsl(var(--foreground)) !important;
 }
 
-.text-muted-foreground {
-  color: hsl(var(--muted-foreground)) !important;
+/* Button specific colors */
+.bg-primary,
+.bg-primary * {
+  color: hsl(var(--primary-foreground)) !important;
 }
 
-.text-primary {
-  color: hsl(var(--primary)) !important;
+/* Card text visibility */
+.card *,
+.bg-card * {
+  color: hsl(var(--card-foreground)) !important;
+}
+
+/* Accent text visibility */
+.bg-accent *,
+.text-accent-foreground {
+  color: hsl(var(--accent-foreground)) !important;
+}
+
+/* Secondary text visibility */
+.bg-secondary *,
+.text-secondary-foreground {
+  color: hsl(var(--secondary-foreground)) !important;
 }
 
 /* Full viewport layout */
