@@ -28,12 +28,15 @@ const MobileLayout: React.FC<MobileLayoutProps> = ({ children }) => {
   return (
     <div className="fixed inset-0 w-full h-full flex flex-col bg-background text-foreground overflow-hidden" data-theme={theme}>
       {/* Main content with proper scrolling */}
-      <main className="flex-1 overflow-y-auto overflow-x-hidden" style={{ paddingBottom: '80px', scrollbarWidth: 'none', msOverflowStyle: 'none' }}>
-        <style jsx>{`
-          main::-webkit-scrollbar {
-            display: none;
-          }
-        `}</style>
+      <main 
+        className="flex-1 overflow-y-auto overflow-x-hidden" 
+        style={{ 
+          paddingBottom: '80px', 
+          scrollbarWidth: 'none', 
+          msOverflowStyle: 'none',
+          WebkitScrollbar: { display: 'none' }
+        }}
+      ></main>
         <AnimatePresence mode="wait">
           <motion.div
             key={location.pathname}

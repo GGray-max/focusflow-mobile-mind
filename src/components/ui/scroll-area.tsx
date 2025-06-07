@@ -14,14 +14,9 @@ const ScrollArea = React.forwardRef<
     {...props}
   >
     <ScrollAreaPrimitive.Viewport 
-      className="h-full w-full rounded-[inherit] text-foreground"
+      className="h-full w-full rounded-[inherit] text-foreground [&::-webkit-scrollbar]:hidden"
       style={{ scrollbarWidth: 'none', msOverflowStyle: 'none' }}
     >
-      <style jsx>{`
-        div::-webkit-scrollbar {
-          display: none;
-        }
-      `}</style>
       {children}
     </ScrollAreaPrimitive.Viewport>
     <ScrollAreaPrimitive.Corner />

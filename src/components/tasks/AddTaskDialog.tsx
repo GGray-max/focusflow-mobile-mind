@@ -218,12 +218,13 @@ const AddTaskDialog: React.FC<AddTaskDialogProps> = ({ isOpen, onClose }) => {
         </DialogHeader>
         
         <div className="flex-1 overflow-hidden px-6">
-          <div className="h-full overflow-y-auto pr-2" style={{ scrollbarWidth: 'none', msOverflowStyle: 'none' }}>
-            <style jsx>{`
-              .h-full::-webkit-scrollbar {
-                display: none;
-              }
-            `}</style>
+          <div 
+            className="h-full overflow-y-auto pr-2" 
+            style={{ 
+              scrollbarWidth: 'none', 
+              msOverflowStyle: 'none'
+            }}
+          >
             <form onSubmit={handleSubmit} className="space-y-4 pt-4 pb-4">
               <motion.div 
                 className="space-y-2"
