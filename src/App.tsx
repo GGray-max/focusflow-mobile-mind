@@ -84,7 +84,7 @@ const App = () => {
                   <NotificationProvider>
                     <TooltipProvider>
                       <BrowserRouter>
-                        <div className="min-h-screen w-full overflow-hidden">
+                        <div className="fixed inset-0 w-full h-full overflow-hidden bg-background text-foreground">
                           {showLoader && <AppLoader onFinished={() => setShowLoader(false)} />}
                           <Toaster />
                           <Sonner />

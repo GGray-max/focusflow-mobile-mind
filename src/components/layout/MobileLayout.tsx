@@ -26,9 +26,14 @@ const MobileLayout: React.FC<MobileLayoutProps> = ({ children }) => {
   ];
 
   return (
-    <div className="w-full h-screen flex flex-col bg-background text-foreground" data-theme={theme}>
+    <div className="fixed inset-0 w-full h-full flex flex-col bg-background text-foreground overflow-hidden" data-theme={theme}>
       {/* Main content with proper scrolling */}
-      <main className="flex-1 overflow-y-auto overflow-x-hidden pb-20">
+      <main className="flex-1 overflow-y-auto overflow-x-hidden" style={{ paddingBottom: '80px', scrollbarWidth: 'none', msOverflowStyle: 'none' }}>
+        <style jsx>{`
+          main::-webkit-scrollbar {
+            display: none;
+          }
+        `}</style>
         <AnimatePresence mode="wait">
           <motion.div
             key={location.pathname}
@@ -36,7 +41,7 @@ const MobileLayout: React.FC<MobileLayoutProps> = ({ children }) => {
             animate={{ opacity: 1, y: 0 }}
             exit={{ opacity: 0, y: -20 }}
             transition={{ duration: 0.4, ease: "easeInOut" }}
-            className="min-h-full w-full px-4 pt-4"
+            className="min-h-full w-full p-4"
           >
             {children}
           </motion.div>
@@ -44,7 +49,7 @@ const MobileLayout: React.FC<MobileLayoutProps> = ({ children }) => {
       </main>
       
       {/* Fixed Bottom Navigation */}
-      <nav className="fixed bottom-0 left-0 right-0 h-16 bg-background border-t border-border z-50 flex items-center justify-around px-2">
+      <nav className="fixed bottom-0 left-0 right-0 h-20 bg-background border-t border-border z-50 flex items-center justify-around px-2 shadow-lg">
         {navItems.map(({ path, Icon, label }, index) => {
           const isActive = location.pathname === path;
           return (
@@ -61,7 +66,7 @@ const MobileLayout: React.FC<MobileLayoutProps> = ({ children }) => {
               whileTap={{ scale: 0.95 }}
             >
               <Icon 
-                size={20} 
+                size={22} 
                 className={`transition-all duration-300 ${
                   isActive ? 'scale-110' : ''
                 }`} 

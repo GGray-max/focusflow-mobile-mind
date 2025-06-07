@@ -212,409 +212,430 @@ const AddTaskDialog: React.FC<AddTaskDialogProps> = ({ isOpen, onClose }) => {
 
   return (
     <Dialog open={isOpen} onOpenChange={handleClose}>
-      <DialogContent className="sm:max-w-[425px] md:max-w-[550px] max-h-[80vh] overflow-hidden bg-white dark:bg-gray-800 rounded-xl shadow-xl">
-        <DialogHeader className="px-6 pt-6">
-          <DialogTitle>Add New Task</DialogTitle>
+      <DialogContent className="sm:max-w-[425px] md:max-w-[550px] h-[90vh] flex flex-col overflow-hidden bg-background border-border">
+        <DialogHeader className="shrink-0 px-6 pt-6">
+          <DialogTitle className="text-foreground">Add New Task</DialogTitle>
         </DialogHeader>
         
-        <ScrollArea className="max-h-[60vh] px-6">
-          <form onSubmit={handleSubmit} className="space-y-4 pt-4">
-            <motion.div 
-              className="space-y-2"
-              initial={{ opacity: 0, y: 10 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.2 }}
-            >
-              <Label htmlFor="title">Task Title</Label>
-              <Input
-                id="title"
-                value={title}
-                onChange={(e) => setTitle(e.target.value)}
-                placeholder="Enter task title"
-                required
-                className="border-focus-200 focus:border-focus-400"
-              />
-            </motion.div>
-            
-            <motion.div 
-              className="space-y-2"
-              initial={{ opacity: 0, y: 10 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.2, delay: 0.05 }}
-            >
-              <Label htmlFor="description">Description (Optional)</Label>
-              <Textarea
-                id="description"
-                value={description}
-                onChange={(e) => setDescription(e.target.value)}
-                placeholder="Enter task details"
-                rows={3}
-                className="border-focus-200 focus:border-focus-400 dark:text-gray-100"
-              />
-            </motion.div>
-            
-            <motion.div 
-              className="space-y-2"
-              initial={{ opacity: 0, y: 10 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.2, delay: 0.1 }}
-            >
-              <Label htmlFor="category">Category</Label>
-              {!isAddingCategory ? (
-                <div className="flex space-x-2">
-                  <Select value={category} onValueChange={setCategory}>
-                    <SelectTrigger className="w-full border-focus-200 focus:border-focus-400">
-                      <SelectValue placeholder="Select category" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {categories.map((cat) => (
-                        <SelectItem key={cat} value={cat}>
-                          {cat}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                  <Button 
-                    type="button" 
-                    variant="outline" 
-                    onClick={() => setIsAddingCategory(true)}
-                  >
-                    New
-                  </Button>
-                </div>
-              ) : (
-                <div className="flex space-x-2">
-                  <Input
-                    value={newCategory}
-                    onChange={(e) => setNewCategory(e.target.value)}
-                    placeholder="New category name"
-                    className="flex-1 border-focus-200 focus:border-focus-400"
-                  />
-                  <Button 
-                    type="button" 
-                    variant="outline" 
-                    onClick={handleAddNewCategory}
-                  >
-                    Add
-                  </Button>
-                  <Button 
-                    type="button" 
-                    variant="ghost" 
-                    onClick={() => setIsAddingCategory(false)}
-                  >
-                    Cancel
-                  </Button>
-                </div>
-              )}
-            </motion.div>
-            
-            <motion.div 
-              className="flex items-center space-x-2"
-              initial={{ opacity: 0, y: 10 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.2, delay: 0.15 }}
-            >
-              <Switch
-                id="monthlyTask"
-                checked={isMonthlyTask}
-                onCheckedChange={setIsMonthlyTask}
-              />
-              <Label htmlFor="monthlyTask">This is a monthly task</Label>
-            </motion.div>
-            
-            <motion.div 
-              className="space-y-2"
-              initial={{ opacity: 0, y: 10 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.2, delay: 0.2 }}
-            >
-              <Label htmlFor="recurrence">Repeat Task</Label>
-              <Select 
-                value={recurrence} 
-                onValueChange={(value) => setRecurrence(value as 'none' | 'daily' | 'weekly' | 'monthly')}
+        <div className="flex-1 overflow-hidden px-6">
+          <div className="h-full overflow-y-auto pr-2" style={{ scrollbarWidth: 'none', msOverflowStyle: 'none' }}>
+            <style jsx>{`
+              .h-full::-webkit-scrollbar {
+                display: none;
+              }
+            `}</style>
+            <form onSubmit={handleSubmit} className="space-y-4 pt-4 pb-4">
+              <motion.div 
+                className="space-y-2"
+                initial={{ opacity: 0, y: 10 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ duration: 0.2 }}
               >
-                <SelectTrigger className="w-full border-focus-200 focus:border-focus-400" id="recurrence">
-                  <SelectValue placeholder="Select recurrence" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="none">Does not repeat</SelectItem>
-                  <SelectItem value="daily">Daily</SelectItem>
-                  <SelectItem value="weekly">Weekly</SelectItem>
-                  <SelectItem value="monthly">Monthly</SelectItem>
-                </SelectContent>
-              </Select>
-              {recurrence !== 'none' && (
-                <div className="flex items-center mt-2 px-3 py-2 rounded-md bg-focus-100 dark:bg-focus-900/20">
-                  <RepeatIcon className="h-4 w-4 mr-2 text-focus-500" />
-                  <span className="text-sm text-focus-600 dark:text-focus-300">
-                    This task will automatically repeat {recurrence}
-                  </span>
-                </div>
-              )}
-            </motion.div>
-            
-            <motion.div 
-              className="space-y-4"
-              initial={{ opacity: 0, y: 10 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.2, delay: 0.25 }}
-            >
-              <div className="space-y-2">
-                <Label>Due Date (Optional)</Label>
-                <Popover>
-                  <PopoverTrigger asChild>
-                    <Button
-                      variant="outline"
-                      className={cn(
-                        "w-full justify-start text-left font-normal border-focus-200",
-                        !dueDate && "text-muted-foreground"
-                      )}
+                <Label htmlFor="title" className="text-foreground">Task Title</Label>
+                <Input
+                  id="title"
+                  value={title}
+                  onChange={(e) => setTitle(e.target.value)}
+                  placeholder="Enter task title"
+                  required
+                  className="bg-background border-border text-foreground"
+                />
+              </motion.div>
+              
+              <motion.div 
+                className="space-y-2"
+                initial={{ opacity: 0, y: 10 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ duration: 0.2, delay: 0.05 }}
+              >
+                <Label htmlFor="description" className="text-foreground">Description (Optional)</Label>
+                <Textarea
+                  id="description"
+                  value={description}
+                  onChange={(e) => setDescription(e.target.value)}
+                  placeholder="Enter task details"
+                  rows={3}
+                  className="bg-background border-border text-foreground"
+                />
+              </motion.div>
+              
+              <motion.div 
+                className="space-y-2"
+                initial={{ opacity: 0, y: 10 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ duration: 0.2, delay: 0.1 }}
+              >
+                <Label htmlFor="category" className="text-foreground">Category</Label>
+                {!isAddingCategory ? (
+                  <div className="flex space-x-2">
+                    <Select value={category} onValueChange={setCategory}>
+                      <SelectTrigger className="w-full bg-background border-border text-foreground">
+                        <SelectValue placeholder="Select category" />
+                      </SelectTrigger>
+                      <SelectContent className="bg-background border-border">
+                        {categories.map((cat) => (
+                          <SelectItem key={cat} value={cat} className="text-foreground">
+                            {cat}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                    <Button 
+                      type="button" 
+                      variant="outline" 
+                      onClick={() => setIsAddingCategory(true)}
+                      className="border-border text-foreground"
                     >
-                      <CalendarIcon className="mr-2 h-4 w-4" />
-                      {dueDate ? format(dueDate, "PPP") : "Select a date"}
+                      New
                     </Button>
-                  </PopoverTrigger>
-                  <PopoverContent className="w-auto p-0" align="start">
-                    <Calendar
-                      mode="single"
-                      selected={dueDate}
-                      onSelect={setDueDate}
-                      initialFocus
-                      className="pointer-events-auto"
+                  </div>
+                ) : (
+                  <div className="flex space-x-2">
+                    <Input
+                      value={newCategory}
+                      onChange={(e) => setNewCategory(e.target.value)}
+                      placeholder="New category name"
+                      className="flex-1 bg-background border-border text-foreground"
                     />
-                  </PopoverContent>
-                </Popover>
-              </div>
+                    <Button 
+                      type="button" 
+                      variant="outline" 
+                      onClick={handleAddNewCategory}
+                      className="border-border text-foreground"
+                    >
+                      Add
+                    </Button>
+                    <Button 
+                      type="button" 
+                      variant="ghost" 
+                      onClick={() => setIsAddingCategory(false)}
+                      className="text-foreground"
+                    >
+                      Cancel
+                    </Button>
+                  </div>
+                )}
+              </motion.div>
               
-              <div className="space-y-2">
-                <Label htmlFor="dueTime">Due Time (Optional)</Label>
-                <div className="flex items-center space-x-2">
-                  <Input
-                    id="dueTime"
-                    type="time"
-                    value={dueTime}
-                    onChange={(e) => setDueTime(e.target.value)}
-                    className="flex-1 border-focus-200 focus:border-focus-400"
-                  />
-                  <Clock className="h-4 w-4 text-gray-400" />
-                </div>
-              </div>
+              <motion.div 
+                className="flex items-center space-x-2"
+                initial={{ opacity: 0, y: 10 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ duration: 0.2, delay: 0.15 }}
+              >
+                <Switch
+                  id="monthlyTask"
+                  checked={isMonthlyTask}
+                  onCheckedChange={setIsMonthlyTask}
+                />
+                <Label htmlFor="monthlyTask" className="text-foreground">This is a monthly task</Label>
+              </motion.div>
               
-              <div className="grid grid-cols-2 gap-4">
+              <motion.div 
+                className="space-y-2"
+                initial={{ opacity: 0, y: 10 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ duration: 0.2, delay: 0.2 }}
+              >
+                <Label htmlFor="recurrence" className="text-foreground">Repeat Task</Label>
+                <Select 
+                  value={recurrence} 
+                  onValueChange={(value) => setRecurrence(value as 'none' | 'daily' | 'weekly' | 'monthly')}
+                >
+                  <SelectTrigger className="w-full bg-background border-border text-foreground" id="recurrence">
+                    <SelectValue placeholder="Select recurrence" />
+                  </SelectTrigger>
+                  <SelectContent className="bg-background border-border">
+                    <SelectItem value="none" className="text-foreground">Does not repeat</SelectItem>
+                    <SelectItem value="daily" className="text-foreground">Daily</SelectItem>
+                    <SelectItem value="weekly" className="text-foreground">Weekly</SelectItem>
+                    <SelectItem value="monthly" className="text-foreground">Monthly</SelectItem>
+                  </SelectContent>
+                </Select>
+                {recurrence !== 'none' && (
+                  <div className="flex items-center mt-2 px-3 py-2 rounded-md bg-accent">
+                    <RepeatIcon className="h-4 w-4 mr-2 text-primary" />
+                    <span className="text-sm text-foreground">
+                      This task will automatically repeat {recurrence}
+                    </span>
+                  </div>
+                )}
+              </motion.div>
+              
+              <motion.div 
+                className="space-y-4"
+                initial={{ opacity: 0, y: 10 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ duration: 0.2, delay: 0.25 }}
+              >
                 <div className="space-y-2">
-                  <Label htmlFor="startTime">Start Time (Optional)</Label>
-                  <Input
-                    id="startTime"
-                    type="time"
-                    value={startTime}
-                    onChange={(e) => {
-                      setStartTime(e.target.value);
-                      if (duration && e.target.value) {
-                        // Update end time based on duration
-                        const [hours, minutes] = e.target.value.split(':').map(Number);
-                        const totalMinutes = hours * 60 + minutes + (duration || 0);
-                        const newHours = Math.floor(totalMinutes / 60) % 24;
-                        const newMinutes = totalMinutes % 60;
-                        
-                        setEndTime(`${newHours.toString().padStart(2, '0')}:${newMinutes.toString().padStart(2, '0')}`);
-                      }
-                    }}
-                    className="border-focus-200 focus:border-focus-400"
-                  />
+                  <Label className="text-foreground">Due Date (Optional)</Label>
+                  <Popover>
+                    <PopoverTrigger asChild>
+                      <Button
+                        variant="outline"
+                        className={cn(
+                          "w-full justify-start text-left font-normal bg-background border-border",
+                          !dueDate && "text-muted-foreground"
+                        )}
+                      >
+                        <CalendarIcon className="mr-2 h-4 w-4" />
+                        {dueDate ? format(dueDate, "PPP") : "Select a date"}
+                      </Button>
+                    </PopoverTrigger>
+                    <PopoverContent className="w-auto p-0 bg-background border-border" align="start">
+                      <Calendar
+                        mode="single"
+                        selected={dueDate}
+                        onSelect={setDueDate}
+                        initialFocus
+                        className="pointer-events-auto"
+                      />
+                    </PopoverContent>
+                  </Popover>
                 </div>
                 
                 <div className="space-y-2">
-                  <Label htmlFor="endTime">End Time (Optional)</Label>
-                  <Input
-                    id="endTime"
-                    type="time"
-                    value={endTime}
-                    onChange={(e) => {
-                      setEndTime(e.target.value);
-                      if (startTime && e.target.value) {
-                        // Update duration based on start and end times
-                        const start = startTime.split(':').map(Number);
-                        const end = e.target.value.split(':').map(Number);
+                  <Label htmlFor="dueTime" className="text-foreground">Due Time (Optional)</Label>
+                  <div className="flex items-center space-x-2">
+                    <Input
+                      id="dueTime"
+                      type="time"
+                      value={dueTime}
+                      onChange={(e) => setDueTime(e.target.value)}
+                      className="flex-1 bg-background border-border text-foreground"
+                    />
+                    <Clock className="h-4 w-4 text-muted-foreground" />
+                  </div>
+                </div>
+                
+                <div className="grid grid-cols-2 gap-4">
+                  <div className="space-y-2">
+                    <Label htmlFor="startTime" className="text-foreground">Start Time (Optional)</Label>
+                    <Input
+                      id="startTime"
+                      type="time"
+                      value={startTime}
+                      onChange={(e) => {
+                        setStartTime(e.target.value);
+                        if (duration && e.target.value) {
+                          // Update end time based on duration
+                          const [hours, minutes] = e.target.value.split(':').map(Number);
+                          const totalMinutes = hours * 60 + minutes + (duration || 0);
+                          const newHours = Math.floor(totalMinutes / 60) % 24;
+                          const newMinutes = totalMinutes % 60;
+                          
+                          setEndTime(`${newHours.toString().padStart(2, '0')}:${newMinutes.toString().padStart(2, '0')}`);
+                        }
+                      }}
+                      className="bg-background border-border text-foreground"
+                    />
+                  </div>
+                  
+                  <div className="space-y-2">
+                    <Label htmlFor="endTime" className="text-foreground">End Time (Optional)</Label>
+                    <Input
+                      id="endTime"
+                      type="time"
+                      value={endTime}
+                      onChange={(e) => {
+                        setEndTime(e.target.value);
+                        if (startTime && e.target.value) {
+                          // Update duration based on start and end times
+                          const start = startTime.split(':').map(Number);
+                          const end = e.target.value.split(':').map(Number);
+                          
+                          const startMinutes = start[0] * 60 + start[1];
+                          const endMinutes = end[0] * 60 + end[1];
+                          
+                          if (endMinutes > startMinutes) {
+                            setDuration(endMinutes - startMinutes);
+                          }
+                        }
+                      }}
+                      className="bg-background border-border text-foreground"
+                    />
+                  </div>
+                </div>
+                
+                <div className="space-y-2">
+                  <Label className="text-foreground">Duration</Label>
+                  <div className="grid grid-cols-4 gap-2">
+                    <Button 
+                      type="button" 
+                      variant={duration === 30 ? "default" : "outline"}
+                      onClick={() => handleSelectDuration(30)}
+                      className="w-full"
+                    >
+                      30 min
+                    </Button>
+                    <Button 
+                      type="button"
+                      variant={duration === 60 ? "default" : "outline"}
+                      onClick={() => handleSelectDuration(60)}
+                      className="w-full"
+                    >
+                      60 min
+                    </Button>
+                    <Button 
+                      type="button"
+                      variant={duration === 90 ? "default" : "outline"}
+                      onClick={() => handleSelectDuration(90)}
+                      className="w-full"
+                    >
+                      90 min
+                    </Button>
+                    <Button 
+                      type="button"
+                      variant={duration !== 30 && duration !== 60 && duration !== 90 ? "default" : "outline"}
+                      onClick={() => {
+                        const customDuration = prompt("Enter custom duration in minutes:", duration?.toString() || "30");
+                        if (customDuration) {
+                          const mins = parseInt(customDuration);
+                          if (!isNaN(mins) && mins > 0) {
+                            handleSelectDuration(mins);
+                          }
+                        }
+                      }}
+                      className="w-full"
+                    >
+                      Custom
+                    </Button>
+                  </div>
+                </div>
+                
+                <div className="flex items-center space-x-2 pt-2">
+                  <Switch
+                    id="enableNotification"
+                    checked={enableNotification}
+                    onCheckedChange={async (checked) => {
+                      setEnableNotification(checked);
+                      
+                      if (checked && !hasNotificationPermission) {
+                        const granted = await NotificationService.requestPermissions();
+                        setHasNotificationPermission(granted);
                         
-                        const startMinutes = start[0] * 60 + start[1];
-                        const endMinutes = end[0] * 60 + end[1];
-                        
-                        if (endMinutes > startMinutes) {
-                          setDuration(endMinutes - startMinutes);
+                        if (!granted) {
+                          toast({
+                            title: "Notification permission required",
+                            description: "Please enable notifications in your browser/device settings",
+                            variant: "destructive"
+                          });
                         }
                       }
                     }}
-                    className="border-focus-200 focus:border-focus-400"
                   />
+                  <Label htmlFor="enableNotification" className="cursor-pointer">
+                    <div className="flex items-center">
+                      <BellRing className="h-4 w-4 mr-2 text-primary" />
+                      <span className="text-foreground">Notify me at this time</span>
+                    </div>
+                  </Label>
                 </div>
-              </div>
+                
+                {enableNotification && (!dueDate || !dueTime) && (
+                  <p className="text-xs text-destructive">
+                    Please set both date and time to enable notifications
+                  </p>
+                )}
+              </motion.div>
               
-              <div className="space-y-2">
-                <Label>Duration</Label>
-                <div className="grid grid-cols-4 gap-2">
+              <motion.div 
+                className="space-y-2"
+                initial={{ opacity: 0, y: 10 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ duration: 0.2, delay: 0.3 }}
+              >
+                <Label className="text-foreground">Priority</Label>
+                <RadioGroup 
+                  defaultValue="medium" 
+                  value={priority}
+                  onValueChange={(value) => setPriority(value as 'low' | 'medium' | 'high')}
+                  className="flex"
+                >
+                  <div className="flex items-center space-x-2 flex-1 justify-center">
+                    <RadioGroupItem value="low" id="low" />
+                    <Label htmlFor="low" className="cursor-pointer text-foreground">Low</Label>
+                  </div>
+                  <div className="flex items-center space-x-2 flex-1 justify-center">
+                    <RadioGroupItem value="medium" id="medium" />
+                    <Label htmlFor="medium" className="cursor-pointer text-foreground">Medium</Label>
+                  </div>
+                  <div className="flex items-center space-x-2 flex-1 justify-center">
+                    <RadioGroupItem value="high" id="high" />
+                    <Label htmlFor="high" className="cursor-pointer text-foreground">High</Label>
+                  </div>
+                </RadioGroup>
+              </motion.div>
+              
+              <motion.div 
+                className="space-y-2"
+                initial={{ opacity: 0, y: 10 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ duration: 0.2, delay: 0.35 }}
+              >
+                <Label htmlFor="subtasks" className="text-foreground">Add Subtasks</Label>
+                <div className="flex items-center space-x-2">
+                  <Input
+                    id="subtasks"
+                    value={newSubtask}
+                    onChange={(e) => setNewSubtask(e.target.value)}
+                    placeholder="Enter subtask"
+                    className="flex-1 bg-background border-border text-foreground"
+                  />
                   <Button 
                     type="button" 
-                    variant={duration === 30 ? "default" : "outline"}
-                    onClick={() => handleSelectDuration(30)}
-                    className="w-full"
+                    variant="outline" 
+                    onClick={handleAddSubtask}
+                    className="border-border text-foreground"
                   >
-                    30 min
-                  </Button>
-                  <Button 
-                    type="button"
-                    variant={duration === 60 ? "default" : "outline"}
-                    onClick={() => handleSelectDuration(60)}
-                    className="w-full"
-                  >
-                    60 min
-                  </Button>
-                  <Button 
-                    type="button"
-                    variant={duration === 90 ? "default" : "outline"}
-                    onClick={() => handleSelectDuration(90)}
-                    className="w-full"
-                  >
-                    90 min
-                  </Button>
-                  <Button 
-                    type="button"
-                    variant={duration !== 30 && duration !== 60 && duration !== 90 ? "default" : "outline"}
-                    onClick={() => {
-                      const customDuration = prompt("Enter custom duration in minutes:", duration?.toString() || "30");
-                      if (customDuration) {
-                        const mins = parseInt(customDuration);
-                        if (!isNaN(mins) && mins > 0) {
-                          handleSelectDuration(mins);
-                        }
-                      }
-                    }}
-                    className="w-full"
-                  >
-                    Custom
+                    Add
                   </Button>
                 </div>
-              </div>
-              
-              <div className="flex items-center space-x-2 pt-2">
-                <Switch
-                  id="enableNotification"
-                  checked={enableNotification}
-                  onCheckedChange={async (checked) => {
-                    setEnableNotification(checked);
-                    
-                    if (checked && !hasNotificationPermission) {
-                      const granted = await NotificationService.requestPermissions();
-                      setHasNotificationPermission(granted);
-                      
-                      if (!granted) {
-                        toast({
-                          title: "Notification permission required",
-                          description: "Please enable notifications in your browser/device settings",
-                          variant: "destructive"
-                        });
-                      }
-                    }
-                  }}
-                />
-                <Label htmlFor="enableNotification" className="cursor-pointer">
-                  <div className="flex items-center">
-                    <BellRing className="h-4 w-4 mr-2 text-focus-400" />
-                    Notify me at this time
-                  </div>
-                </Label>
-              </div>
-              
-              {enableNotification && (!dueDate || !dueTime) && (
-                <p className="text-xs text-amber-500 dark:text-amber-400">
-                  Please set both date and time to enable notifications
-                </p>
-              )}
-            </motion.div>
-            
-            <motion.div 
-              className="space-y-2"
-              initial={{ opacity: 0, y: 10 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.2, delay: 0.3 }}
-            >
-              <Label>Priority</Label>
-              <RadioGroup 
-                defaultValue="medium" 
-                value={priority}
-                onValueChange={(value) => setPriority(value as 'low' | 'medium' | 'high')}
-                className="flex"
-              >
-                <div className="flex items-center space-x-2 flex-1 justify-center">
-                  <RadioGroupItem value="low" id="low" />
-                  <Label htmlFor="low" className="cursor-pointer">Low</Label>
-                </div>
-                <div className="flex items-center space-x-2 flex-1 justify-center">
-                  <RadioGroupItem value="medium" id="medium" />
-                  <Label htmlFor="medium" className="cursor-pointer">Medium</Label>
-                </div>
-                <div className="flex items-center space-x-2 flex-1 justify-center">
-                  <RadioGroupItem value="high" id="high" />
-                  <Label htmlFor="high" className="cursor-pointer">High</Label>
-                </div>
-              </RadioGroup>
-            </motion.div>
-            
-            <motion.div 
-              className="space-y-2"
-              initial={{ opacity: 0, y: 10 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.2, delay: 0.35 }}
-            >
-              <Label htmlFor="subtasks">Add Subtasks</Label>
-              <div className="flex items-center space-x-2">
-                <Input
-                  id="subtasks"
-                  value={newSubtask}
-                  onChange={(e) => setNewSubtask(e.target.value)}
-                  placeholder="Enter subtask"
-                  className="flex-1 border-focus-200 focus:border-focus-400"
-                />
-                <Button 
-                  type="button" 
-                  variant="outline" 
-                  onClick={handleAddSubtask}
-                >
-                  Add
-                </Button>
-              </div>
-              
-              {subtasks.length > 0 && (
-                <div className="mt-3 space-y-2">
-                  {subtasks.map((task, index) => (
-                    <motion.div 
-                      key={index} 
-                      className="flex justify-between items-center bg-gray-50 dark:bg-gray-800 p-2 rounded-md"
-                      initial={{ opacity: 0, x: -10 }}
-                      animate={{ opacity: 1, x: 0 }}
-                      transition={{ duration: 0.2 }}
-                    >
-                      <span className="text-sm gray-text-override dark:text-gray-200">{task}</span>
-                      <Button 
-                        type="button"
-                        variant="ghost" 
-                        size="sm" 
-                        onClick={() => removeSubtask(index)}
+                
+                {subtasks.length > 0 && (
+                  <div className="mt-3 space-y-2">
+                    {subtasks.map((task, index) => (
+                      <motion.div 
+                        key={index} 
+                        className="flex justify-between items-center bg-accent p-2 rounded-md"
+                        initial={{ opacity: 0, x: -10 }}
+                        animate={{ opacity: 1, x: 0 }}
+                        transition={{ duration: 0.2 }}
                       >
-                        Remove
-                      </Button>
-                    </motion.div>
-                  ))}
-                </div>
-              )}
-            </motion.div>
-          </form>
-        </ScrollArea>
+                        <span className="text-sm text-foreground">{task}</span>
+                        <Button 
+                          type="button"
+                          variant="ghost" 
+                          size="sm" 
+                          onClick={() => removeSubtask(index)}
+                          className="text-foreground"
+                        >
+                          Remove
+                        </Button>
+                      </motion.div>
+                    ))}
+                  </div>
+                )}
+              </motion.div>
+            </form>
+          </div>
+        </div>
         
-        <DialogFooter className="px-6 py-4 border-t mt-2 shrink-0 bg-background dark:bg-background">
-          <Button type="button" variant="outline" onClick={handleClose} className="border-focus-200 hover:border-focus-400">
+        <DialogFooter className="shrink-0 px-6 py-4 border-t border-border bg-background">
+          <Button 
+            type="button" 
+            variant="outline" 
+            onClick={handleClose} 
+            className="border-border text-foreground hover:bg-accent"
+          >
             Cancel
           </Button>
-          <Button type="button" onClick={handleSubmit} className="bg-focus-400 hover:bg-focus-500 text-white">
+          <Button 
+            type="button" 
+            onClick={handleSubmit} 
+            className="bg-primary hover:bg-primary/90 text-primary-foreground"
+          >
             Add Task
           </Button>
         </DialogFooter>

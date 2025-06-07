@@ -9,6 +9,8 @@
 @layer base {
   * {
     box-sizing: border-box;
+    margin: 0;
+    padding: 0;
   }
   
   html, body, #root {
@@ -16,11 +18,23 @@
     padding: 0;
     width: 100%;
     height: 100%;
-    overflow-x: hidden;
+    overflow: hidden;
+    position: fixed;
+    inset: 0;
+  }
+
+  /* Hide all scrollbars for mobile */
+  * {
+    scrollbar-width: none;
+    -ms-overflow-style: none;
+  }
+  
+  *::-webkit-scrollbar {
+    display: none;
   }
 
   :root {
-    /* Foundations */
+    /* Light theme - Default */
     --background: 0 0% 100%;
     --foreground: 222.2 84% 4.9%;
     
@@ -66,14 +80,14 @@
   }
 
   .dark, [data-theme='dark'] {
-    /* Foundations - Dark Mode */
-    --background: 222.2 84% 4.9%;
+    /* Dark theme - Much darker than light */
+    --background: 220 13% 9%;
     --foreground: 210 40% 98%;
     
     /* Components - Dark Mode */
-    --card: 222.2 84% 4.9%;
+    --card: 220 13% 9%;
     --card-foreground: 210 40% 98%;
-    --popover: 222.2 84% 4.9%;
+    --popover: 220 13% 9%;
     --popover-foreground: 210 40% 98%;
     
     /* Brand colors - Dark Mode */
@@ -81,76 +95,102 @@
     --primary-foreground: 0 0% 100%;
     
     /* Supporting colors - Dark Mode */
-    --secondary: 217.2 32.6% 17.5%;
+    --secondary: 215 25% 15%;
     --secondary-foreground: 210 40% 98%;
-    --muted: 217.2 32.6% 17.5%;
+    --muted: 215 25% 15%;
     --muted-foreground: 215 20.2% 65.1%;
     
     /* Accent colors - Dark Mode */
-    --accent: 217.2 32.6% 17.5%;
+    --accent: 215 25% 15%;
     --accent-foreground: 210 40% 98%;
     
     /* Functional colors - Dark Mode */
     --destructive: 0 62.8% 30.6%;
     --destructive-foreground: 210 40% 98%;
-    --border: 217.2 32.6% 17.5%;
-    --input: 217.2 32.6% 17.5%;
+    --border: 215 25% 15%;
+    --input: 215 25% 15%;
     --ring: 265 89% 70%;
     
     /* Sidebar - Dark Mode */
-    --sidebar-background: 222.2 84% 4.9%;
+    --sidebar-background: 220 13% 9%;
     --sidebar-foreground: 210 40% 98%;
     --sidebar-primary: 265 89% 70%;
     --sidebar-primary-foreground: 0 0% 100%;
-    --sidebar-accent: 217.2 32.6% 17.5%;
+    --sidebar-accent: 215 25% 15%;
     --sidebar-accent-foreground: 210 40% 98%;
-    --sidebar-border: 217.2 32.6% 17.5%;
+    --sidebar-border: 215 25% 15%;
     --sidebar-ring: 265 89% 70%;
   }
 
   [data-theme='blue'] {
-    /* Blue theme */
-    --background: 214 100% 97%;
-    --foreground: 214 100% 15%;
-    --card: 0 0% 100%;
-    --card-foreground: 214 100% 15%;
-    --popover: 0 0% 100%;
-    --popover-foreground: 214 100% 15%;
-    --primary: 214 100% 50%;
+    /* Blue theme - Distinctly blue */
+    --background: 210 100% 95%;
+    --foreground: 210 100% 10%;
+    --card: 210 100% 98%;
+    --card-foreground: 210 100% 10%;
+    --popover: 210 100% 98%;
+    --popover-foreground: 210 100% 10%;
+    --primary: 210 100% 50%;
     --primary-foreground: 0 0% 100%;
-    --secondary: 214 31.8% 91.4%;
-    --secondary-foreground: 214 47.4% 11.2%;
-    --muted: 214 31.8% 91.4%;
-    --muted-foreground: 215.4 16.3% 46.9%;
-    --accent: 214 31.8% 91.4%;
-    --accent-foreground: 214 47.4% 11.2%;
+    --secondary: 210 60% 85%;
+    --secondary-foreground: 210 100% 15%;
+    --muted: 210 60% 85%;
+    --muted-foreground: 210 50% 40%;
+    --accent: 210 60% 85%;
+    --accent-foreground: 210 100% 15%;
     --destructive: 0 84.2% 60.2%;
     --destructive-foreground: 210 40% 98%;
-    --border: 214 31.8% 91.4%;
-    --input: 214 31.8% 91.4%;
-    --ring: 214 100% 50%;
+    --border: 210 60% 80%;
+    --input: 210 60% 80%;
+    --ring: 210 100% 50%;
   }
 }
 
 @layer utilities {
   .glass-card {
-    @apply backdrop-blur-sm bg-white/90 dark:bg-black/40 border border-gray-200 dark:border-gray-700 shadow-sm;
+    @apply backdrop-blur-sm bg-background/90 border border-border shadow-sm;
   }
 }
 
 /* Global styling */
 html {
   @apply antialiased;
+  font-family: 'Inter', system-ui, sans-serif;
 }
 
-/* Remove default margins and paddings */
+/* Ensure text is always visible */
 * {
-  margin: 0;
-  padding: 0;
+  color: inherit;
 }
 
-/* Ensure full height layout */
+/* Force text visibility */
+p, span, div, label, input, textarea, select, button {
+  color: hsl(var(--foreground)) !important;
+}
+
+/* Ensure buttons have proper contrast */
+button {
+  font-weight: 500;
+}
+
+/* Make sure all text is readable */
+.text-foreground {
+  color: hsl(var(--foreground)) !important;
+}
+
+.text-muted-foreground {
+  color: hsl(var(--muted-foreground)) !important;
+}
+
+.text-primary {
+  color: hsl(var(--primary)) !important;
+}
+
+/* Full viewport layout */
 html, body, #root {
-  height: 100%;
-  width: 100%;
+  height: 100vh;
+  width: 100vw;
+  position: fixed;
+  inset: 0;
+  overflow: hidden;
 }
