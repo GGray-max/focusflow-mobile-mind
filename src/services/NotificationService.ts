@@ -42,7 +42,7 @@ class NotificationService {
     this.registerListeners();
   }
 
-  private async initializeChannels() {
+  public async initializeChannels() {
     if (Capacitor.isNativePlatform()) {
       try {
         // Create channels with default sounds first

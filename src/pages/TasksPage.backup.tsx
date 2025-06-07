@@ -1,3 +1,4 @@
+
 import React, { useState } from 'react';
 import MobileLayout from '@/components/layout/MobileLayout';
 import { Button } from '@/components/ui/button';
@@ -295,6 +296,8 @@ const TasksPage: React.FC = () => {
                     <TaskItem
                       key={task.id}
                       task={task}
+                      onToggleComplete={() => toggleComplete(task.id)}
+                      onTogglePriority={() => togglePriority(task.id)}
                       onClick={() => setSelectedTask(task)}
                     />
                   ))
@@ -314,6 +317,8 @@ const TasksPage: React.FC = () => {
                   <TaskItem
                     key={task.id}
                     task={task}
+                    onToggleComplete={() => toggleComplete(task.id)}
+                    onTogglePriority={() => togglePriority(task.id)}
                     onClick={() => setSelectedTask(task)}
                   />
                 ))

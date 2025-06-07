@@ -23,7 +23,14 @@ const TimerPage: React.FC = () => {
     .slice(0, 3);
     
   const handleTaskSelect = (taskTitle: string) => {
-    startTimer(taskTitle);
+    // Fix: Convert task title to task ID if startTimer expects a number
+    // Since we're passing a task title as string, we need to find the task and use its ID
+    const task = tasks.find(t => t.title === taskTitle);
+    if (task) {
+      // If startTimer expects a number (task ID), convert the string ID to number
+      const taskId = parseInt(task.id);
+      startTimer(taskId);
+    }
   };
   
   return (

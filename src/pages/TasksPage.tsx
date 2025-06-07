@@ -327,10 +327,13 @@ const TasksPage: React.FC = () => {
 
   const scheduleTaskNotification = async (task: Task) => {
     try {
+      // Fix: Convert string to Date if needed
+      const dueDate = typeof task.dueDate === 'string' ? new Date(task.dueDate) : task.dueDate || new Date(Date.now() + 60 * 1000);
+      
       await scheduleNotification({
         title: task.title,
         body: 'Task reminder',
-        date: task.dueDate || new Date(Date.now() + 60 * 1000), // Default to 1 minute from now if no due date
+        date: dueDate,
         isUrgent: localStorage.getItem('urgentNotifications') === 'true'
       });
       toast({
