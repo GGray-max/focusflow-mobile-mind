@@ -1,123 +1,62 @@
-import { PermissionsAndroid, Platform, Alert, Linking } from 'react-native';
-import { check, PERMISSIONS, request, RESULTS } from 'react-native-permissions';
 
 type PermissionStatus = 'granted' | 'denied' | 'blocked' | 'unavailable' | 'limited';
 
 class PermissionService {
-  // Check if we're running on Android
-  static isAndroid = Platform.OS === 'android';
-
-  // Check and request microphone permission
+  // Check and request microphone permission for web
   static async checkAndRequestMicrophonePermission(): Promise<PermissionStatus> {
-    if (!this.isAndroid) return 'granted'; // Skip on non-Android
-
     try {
-      // Check if we already have permission
-      const hasPermission = await check(PERMISSIONS.ANDROID.RECORD_AUDIO);
+      // Check if we're in a browser environment
+      if (typeof navigator === 'undefined' || !navigator.mediaDevices) {
+        return 'unavailable';
+      }
+
+      // Request microphone permission
+      const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
       
-      if (hasPermission === RESULTS.GRANTED) {
-        return 'granted';
-      }
-
-      // If permission hasn't been denied before, request it
-      if (hasPermission === RESULTS.DENIED) {
-        const result = await request(PERMISSIONS.ANDROID.RECORD_AUDIO);
-        return result as PermissionStatus;
-      }
-
-      // If permission was denied before, show rationale
-      if (hasPermission === RESULTS.BLOCKED) {
-        return 'blocked';
-      }
-
-      return hasPermission as PermissionStatus;
-    } catch (error) {
+      // Stop the stream immediately as we only needed permission
+      stream.getTracks().forEach(track => track.stop());
+      
+      return 'granted';
+    } catch (error: any) {
       console.error('Error checking microphone permission:', error);
-      return 'unavailable';
-    }
-  }
-
-  // Check and request overlay permission (for drawing over other apps)
-  static async checkAndRequestOverlayPermission(): Promise<boolean> {
-    if (!this.isAndroid) return true; // Skip on non-Android
-
-    try {
-      // On Android 10+ we need to check for overlay permission
-      if (Platform.Version >= 29) {
-        const hasPermission = await PermissionsAndroid.check(
-          PermissionsAndroid.PERMISSIONS.SYSTEM_ALERT_WINDOW
-        );
-
-        if (!hasPermission) {
-          // Request the permission
-          const granted = await PermissionsAndroid.request(
-            PermissionsAndroid.PERMISSIONS.SYSTEM_ALERT_WINDOW,
-            {
-              title: 'Overlay Permission',
-              message: 'FocusFlow needs overlay permission to show timers over other apps',
-              buttonNeutral: 'Ask Me Later',
-              buttonNegative: 'Cancel',
-              buttonPositive: 'OK',
-            },
-          );
-          
-          if (granted === PermissionsAndroid.RESULTS.GRANTED) {
-            return true;
-          } else {
-            // If permission is denied, show a dialog to guide user to settings
-            Alert.alert(
-              'Permission Required',
-              'Overlay permission is required to show timers over other apps. Please enable it in app settings.',
-              [
-                { text: 'Cancel', style: 'cancel' },
-                { text: 'Open Settings', onPress: () => this.openAppSettings() },
-              ],
-            );
-            return false;
-          }
-        }
-        return true;
+      
+      if (error.name === 'NotAllowedError') {
+        return 'denied';
+      } else if (error.name === 'NotFoundError') {
+        return 'unavailable';
       }
-      return true; // No overlay permission needed for older Android versions
-    } catch (error) {
-      console.error('Error checking overlay permission:', error);
-      return false;
+      
+      return 'denied';
     }
   }
 
-  // Open app settings
+  // Web apps don't need overlay permission - this is a no-op
+  static async checkAndRequestOverlayPermission(): Promise<boolean> {
+    return true; // Web apps don't need overlay permission
+  }
+
+  // Open browser settings (limited functionality)
   static openAppSettings() {
-    if (this.isAndroid) {
-      Linking.openSettings();
-    } else {
-      Linking.openURL('app-settings:');
-    }
+    // In web browsers, we can't directly open settings
+    // We can only suggest the user to check their browser settings
+    alert('Please check your browser settings to manage permissions for this site.');
   }
 
-  // Show permission rationale dialog
+  // Show permission rationale dialog using browser alert
   static showPermissionRationale(
     title: string,
     message: string,
     onGranted: () => void,
     onDenied: () => void = () => {}
   ) {
-    Alert.alert(
-      title,
-      message,
-      [
-        {
-          text: 'Not Now',
-          style: 'cancel',
-          onPress: onDenied,
-        },
-        {
-          text: 'Continue',
-          onPress: onGranted,
-        },
-      ],
-      { cancelable: false }
-    );
+    const granted = confirm(`${title}\n\n${message}\n\nWould you like to continue?`);
+    
+    if (granted) {
+      onGranted();
+    } else {
+      onDenied();
+    }
   }
 }
 
-export default new PermissionService();
+export default PermissionService;

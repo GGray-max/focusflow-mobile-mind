@@ -60,6 +60,7 @@ type TaskAction =
   | { type: 'TOGGLE_SUBTASK'; payload: { taskId: string; subtaskId: string } }
   | { type: 'LOAD_TASKS'; payload: Task[] }
   | { type: 'SET_ERROR'; payload: string }
+  | { type: 'SET_LOADING'; payload: boolean }
   | { type: 'ADD_SUBTASK'; payload: { taskId: string; subtask: SubTask } }
   | { type: 'DELETE_SUBTASK'; payload: { taskId: string; subtaskId: string } }
   | { type: 'TOGGLE_PRIORITY'; payload: string }
@@ -251,6 +252,11 @@ const taskReducer = (state: TaskState, action: TaskAction): TaskState => {
         ...state,
         error: action.payload,
         loading: false,
+      };
+    case 'SET_LOADING':
+      return {
+        ...state,
+        loading: action.payload,
       };
     case 'ADD_SUBTASK':
       return {
