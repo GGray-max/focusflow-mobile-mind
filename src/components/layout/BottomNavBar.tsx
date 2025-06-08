@@ -1,8 +1,16 @@
+
 import React, { useState, useEffect } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { motion } from 'framer-motion';
-import { ListTodo, Clock, BarChart, Settings, PieChart, Calendar, Target, Zap } from 'lucide-react';
+import { ListTodo, Clock, BarChart, Settings, Zap, MoreHorizontal } from 'lucide-react';
 import { useTheme } from '../../contexts/ThemeContext';
+import { Button } from '@/components/ui/button';
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from '@/components/ui/dropdown-menu';
 
 const BottomNavBar: React.FC = () => {
   const navigate = useNavigate();
@@ -13,16 +21,20 @@ const BottomNavBar: React.FC = () => {
   const [lastScrollY, setLastScrollY] = useState(0);
   const [isVisible, setIsVisible] = useState(true);
 
-  // Updated navigation items to include new productivity page
-  const navItems = [
+  // Primary navigation items (main 4 items)
+  const primaryNavItems = [
     { path: '/tasks', Icon: ListTodo, label: 'Tasks' },
     { path: '/productivity', Icon: Zap, label: 'Productivity' },
     { path: '/timer', Icon: Clock, label: 'Timer' },
     { path: '/insights', Icon: BarChart, label: 'Insights' },
-    { path: '/vision-board', Icon: Target, label: 'My Why' },
-    { path: '/review', Icon: PieChart, label: 'Review' },
-    { path: '/calendar', Icon: Calendar, label: 'Calendar' },
-    { path: '/settings', Icon: Settings, label: 'Settings' },
+  ];
+
+  // Secondary navigation items (in dropdown menu)
+  const secondaryNavItems = [
+    { path: '/vision-board', label: 'My Why' },
+    { path: '/review', label: 'Review' },
+    { path: '/calendar', label: 'Calendar' },
+    { path: '/settings', label: 'Settings' },
   ];
 
   // Scroll event listener for auto-hide functionality
@@ -53,26 +65,29 @@ const BottomNavBar: React.FC = () => {
     };
   }, [lastScrollY]);
 
+  const isSecondaryActive = secondaryNavItems.some(item => item.path === location.pathname);
+
   return (
     <div className="fixed bottom-4 left-4 right-4 z-50 flex justify-center pointer-events-none">
       <motion.nav 
-        className={`flex items-center justify-around bg-background/95 backdrop-blur-lg border border-border rounded-full shadow-lg px-3 py-2 pointer-events-auto transition-transform duration-300 ${
+        className={`flex items-center justify-between bg-background/95 backdrop-blur-lg border border-border rounded-2xl shadow-lg px-4 py-3 pointer-events-auto transition-transform duration-300 ${
           isVisible ? 'translate-y-0' : 'translate-y-24'
         }`}
         initial={{ y: 100, opacity: 0 }}
         animate={{ y: 0, opacity: 1 }}
         transition={{ duration: 0.3 }}
-        style={{ minWidth: '320px', maxWidth: '90vw' }}
+        style={{ minWidth: '280px', maxWidth: '400px', width: '90vw' }}
       >
-        {navItems.map(({ path, Icon, label }, index) => {
+        {/* Primary Navigation Items */}
+        {primaryNavItems.map(({ path, Icon, label }) => {
           const isActive = location.pathname === path;
           return (
             <motion.button
               key={path}
-              className={`flex flex-col items-center justify-center p-2 rounded-full transition-all duration-300 min-w-0 ${
+              className={`flex flex-col items-center justify-center p-3 rounded-xl transition-all duration-300 min-w-0 flex-1 ${
                 isActive 
-                  ? 'text-primary bg-primary/10 scale-110'
-                  : 'text-muted-foreground hover:text-foreground hover:bg-accent'
+                  ? 'text-primary bg-primary/10 scale-105'
+                  : 'text-muted-foreground hover:text-foreground hover:bg-accent/50'
               }`}
               onClick={() => navigate(path)}
               aria-label={label}
@@ -80,17 +95,52 @@ const BottomNavBar: React.FC = () => {
               whileTap={{ scale: 0.95 }}
             >
               <Icon 
-                size={18} 
+                size={20} 
                 className={`transition-all duration-300 ${
                   isActive ? 'scale-110' : ''
                 }`} 
               />
-              <span className="text-[10px] mt-1 font-medium truncate max-w-12">
+              <span className="text-xs mt-1 font-medium">
                 {label}
               </span>
             </motion.button>
           );
         })}
+
+        {/* More Menu */}
+        <DropdownMenu>
+          <DropdownMenuTrigger asChild>
+            <motion.button
+              className={`flex flex-col items-center justify-center p-3 rounded-xl transition-all duration-300 min-w-0 ${
+                isSecondaryActive
+                  ? 'text-primary bg-primary/10 scale-105'
+                  : 'text-muted-foreground hover:text-foreground hover:bg-accent/50'
+              }`}
+              whileHover={{ y: -2 }}
+              whileTap={{ scale: 0.95 }}
+            >
+              <MoreHorizontal size={20} />
+              <span className="text-xs mt-1 font-medium">More</span>
+            </motion.button>
+          </DropdownMenuTrigger>
+          <DropdownMenuContent 
+            side="top" 
+            align="end" 
+            className="mb-2 bg-background/95 backdrop-blur-lg border border-border shadow-lg"
+          >
+            {secondaryNavItems.map(({ path, label }) => (
+              <DropdownMenuItem
+                key={path}
+                onClick={() => navigate(path)}
+                className={`cursor-pointer ${
+                  location.pathname === path ? 'bg-primary/10 text-primary' : ''
+                }`}
+              >
+                {label}
+              </DropdownMenuItem>
+            ))}
+          </DropdownMenuContent>
+        </DropdownMenu>
       </motion.nav>
     </div>
   );

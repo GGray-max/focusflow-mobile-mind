@@ -1,3 +1,4 @@
+
 import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
@@ -19,6 +20,7 @@ import { ThemeProvider } from './contexts/ThemeContext';
 
 import Index from "./pages/Index";
 import TasksPage from "./pages/TasksPage";
+import ProductivityPage from "./pages/ProductivityPage";
 import TimerPage from "./pages/TimerPage";
 import InsightsPage from "./pages/InsightsPage";
 import SettingsPage from "./pages/SettingsPage";
@@ -97,6 +99,11 @@ const App = () => {
                             <Route path="/tasks" element={
                               <ErrorBoundary>
                                 <TasksPage />
+                              </ErrorBoundary>
+                            } />
+                            <Route path="/productivity" element={
+                              <ErrorBoundary>
+                                <ProductivityPage />
                               </ErrorBoundary>
                             } />
                             <Route path="/timer" element={
