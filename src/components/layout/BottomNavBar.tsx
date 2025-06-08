@@ -1,8 +1,7 @@
-
 import React, { useState, useEffect } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { motion } from 'framer-motion';
-import { ListTodo, Clock, BarChart, Settings, PieChart, Calendar, Target } from 'lucide-react';
+import { ListTodo, Clock, BarChart, Settings, PieChart, Calendar, Target, Zap } from 'lucide-react';
 import { useTheme } from '../../contexts/ThemeContext';
 
 const BottomNavBar: React.FC = () => {
@@ -14,9 +13,10 @@ const BottomNavBar: React.FC = () => {
   const [lastScrollY, setLastScrollY] = useState(0);
   const [isVisible, setIsVisible] = useState(true);
 
-  // Navigation items matching MobileLayout
+  // Updated navigation items to include new productivity page
   const navItems = [
     { path: '/tasks', Icon: ListTodo, label: 'Tasks' },
+    { path: '/productivity', Icon: Zap, label: 'Productivity' },
     { path: '/timer', Icon: Clock, label: 'Timer' },
     { path: '/insights', Icon: BarChart, label: 'Insights' },
     { path: '/vision-board', Icon: Target, label: 'My Why' },
