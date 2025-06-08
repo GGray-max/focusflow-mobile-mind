@@ -121,6 +121,11 @@ const AddTaskDialog: React.FC<AddTaskDialogProps> = ({ isOpen, onClose }) => {
       updatedAt: new Date().toISOString(),
       totalTimeSpent: 0,
       focusSessions: [],
+      notes: [],
+      links: [],
+      estimatedDuration: calculatedDuration || 25,
+      actualDuration: 0,
+      column: 'backlog'
     };
     
     addTask(newTask);
