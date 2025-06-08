@@ -19,11 +19,6 @@ import { useTheme } from '../contexts/ThemeContext';
 const SettingsPage: React.FC = () => {
   // Would integrate with device notification system in a real mobile app
   const [allowNotifications, setAllowNotifications] = React.useState(true);
-  const [isDarkMode, setIsDarkMode] = React.useState(() => {
-    return localStorage.getItem('darkMode') === 'true' || 
-           (!('darkMode' in localStorage) && 
-            window.matchMedia('(prefers-color-scheme: dark)').matches);
-  });
   
   // Vision Board settings
   const [showMotivationalReminders, setShowMotivationalReminders] = React.useState(() => {
@@ -41,7 +36,7 @@ const SettingsPage: React.FC = () => {
   const { state: taskState } = useTasks();
   const { state: procrastinationState } = useProcrastination();
   const { requestPermissions } = useNotification();
-  const { theme, toggleTheme } = useTheme();
+  const { theme, setTheme } = useTheme();
   
   useEffect(() => {
     // Request notification permissions on page load
@@ -65,19 +60,12 @@ const SettingsPage: React.FC = () => {
     handleRequestPermissions();
   }, []);
   
-  const toggleDarkMode = () => {
-    const newMode = !isDarkMode;
-    setIsDarkMode(newMode);
-    localStorage.setItem('darkMode', newMode.toString());
-    
-    if (newMode) {
-      document.documentElement.classList.add('dark');
-    } else {
-      document.documentElement.classList.remove('dark');
-    }
+  const toggleTheme = () => {
+    const newTheme = theme === 'light' ? 'dark' : 'light';
+    setTheme(newTheme);
     
     toast({
-      title: newMode ? "Dark mode enabled" : "Light mode enabled",
+      title: newTheme === 'dark' ? "Dark mode enabled" : "Light mode enabled",
       description: "Your theme preference has been saved",
     });
   };
@@ -108,15 +96,6 @@ const SettingsPage: React.FC = () => {
     setUrgentNotifications(checked);
     localStorage.setItem('urgentNotifications', checked.toString());
   };
-  
-  // Apply dark mode on initial load
-  useEffect(() => {
-    if (isDarkMode) {
-      document.documentElement.classList.add('dark');
-    } else {
-      document.documentElement.classList.remove('dark');
-    }
-  }, [isDarkMode]);
   
   const handleClearAllData = () => {
     localStorage.clear();
@@ -183,37 +162,22 @@ const SettingsPage: React.FC = () => {
             <CardHeader className="pb-2">
               <div className="flex justify-between items-center">
                 <CardTitle className="text-lg font-semibold text-gray-900 dark:text-white">Appearance</CardTitle>
-                <div className="flex justify-center">
-                  <button
-                    onClick={toggleTheme}
-                    className="p-2 rounded-lg flex flex-col items-center justify-center transition-colors bg-gray-100 dark:bg-gray-800" 
-                    aria-label={`Current theme: ${theme.charAt(0).toUpperCase() + theme.slice(1)}. Click to switch to next theme.`}
-                  >
-                    {theme === 'light' && <Sun className="w-5 h-5 mb-1 text-yellow-500" />}
-                    {theme === 'dark' && <Moon className="w-5 h-5 mb-1 text-blue-400" />}
-                    {theme === 'blue' && <Palette className="w-5 h-5 mb-1 text-blue-600" />}
-                    <span className="text-xs capitalize">{theme}</span>
-                  </button>
-                </div>
-              </div>
-              <CardDescription className="text-sm text-gray-500 dark:text-gray-400">
-                Toggle between light, dark, and blue mode for your comfort
-              </CardDescription>
-            </CardHeader>
-            <CardContent className="px-6 py-4 space-y-4">
-              <div className="flex justify-center">
                 <button
                   onClick={toggleTheme}
-                  className="p-2 rounded-lg flex flex-col items-center justify-center transition-colors bg-gray-100 dark:bg-gray-800" 
-                  aria-label={`Current theme: ${theme.charAt(0).toUpperCase() + theme.slice(1)}. Click to switch to next theme.`}
+                  className="p-3 rounded-full bg-gray-100 dark:bg-gray-800 hover:bg-gray-200 dark:hover:bg-gray-700 transition-colors"
+                  aria-label={`Switch to ${theme === 'light' ? 'dark' : 'light'} mode`}
                 >
-                  {theme === 'light' && <Sun className="w-5 h-5 mb-1 text-yellow-500" />}
-                  {theme === 'dark' && <Moon className="w-5 h-5 mb-1 text-blue-400" />}
-                  {theme === 'blue' && <Palette className="w-5 h-5 mb-1 text-blue-600" />}
-                  <span className="text-xs capitalize">{theme}</span>
+                  {theme === 'light' ? (
+                    <Moon className="w-5 h-5 text-gray-700 dark:text-gray-300" />
+                  ) : (
+                    <Sun className="w-5 h-5 text-yellow-500" />
+                  )}
                 </button>
               </div>
-            </CardContent>
+              <CardDescription className="text-sm text-gray-500 dark:text-gray-400">
+                Toggle between light and dark mode for your comfort
+              </CardDescription>
+            </CardHeader>
           </Card>
         </motion.div>
         

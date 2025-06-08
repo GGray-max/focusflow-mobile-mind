@@ -1,44 +1,64 @@
+
 import React from 'react';
-import { Link, useLocation } from 'react-router-dom';
-import { Home, CheckSquare, Target, Clock, Settings } from 'lucide-react';
-import { cn } from '@/lib/utils';
+import { useNavigate, useLocation } from 'react-router-dom';
+import { motion } from 'framer-motion';
+import { ListTodo, Clock, BarChart, Settings, PieChart, Calendar, Target } from 'lucide-react';
+import { useTheme } from '../../contexts/ThemeContext';
 
 const BottomNavBar: React.FC = () => {
+  const navigate = useNavigate();
   const location = useLocation();
-  
+  const { theme } = useTheme();
+
+  // Navigation items matching MobileLayout
   const navItems = [
-    { path: '/', icon: <Home className="h-5 w-5" />, label: 'Home' },
-    { path: '/tasks', icon: <CheckSquare className="h-5 w-5" />, label: 'Tasks' },
-    { path: '/vision-board', icon: <Target className="h-5 w-5" />, label: 'Vision' },
-    { path: '/timer', icon: <Clock className="h-5 w-5" />, label: 'Timer' },
-    { path: '/settings', icon: <Settings className="h-5 w-5" />, label: 'Settings' },
+    { path: '/tasks', Icon: ListTodo, label: 'Tasks' },
+    { path: '/timer', Icon: Clock, label: 'Timer' },
+    { path: '/insights', Icon: BarChart, label: 'Insights' },
+    { path: '/vision-board', Icon: Target, label: 'My Why' },
+    { path: '/review', Icon: PieChart, label: 'Review' },
+    { path: '/calendar', Icon: Calendar, label: 'Calendar' },
+    { path: '/settings', Icon: Settings, label: 'Settings' },
   ];
-  
+
   return (
-    <nav className="fixed bottom-0 left-0 right-0 bg-background dark:bg-background border-t border-border/50 shadow-lg z-30 md:hidden">
-      <div className="flex justify-between items-center h-16 px-2 sm:px-4">
-        {navItems.map((item) => (
-          <Link 
-            key={item.path} 
-            to={item.path} 
-            className="flex flex-col items-center justify-center w-full h-full"
-          >
-            <div className={cn(
-              "flex flex-col items-center justify-center w-full h-full",
-              location.pathname === item.path ? "text-primary dark:text-primary-foreground" : "text-muted-foreground"
-            )}>
-              <div className="relative">
-                {item.icon}
-                {location.pathname === item.path && (
-                  <span className="absolute -bottom-1 left-1/2 transform -translate-x-1/2 w-1 h-1 bg-primary dark:bg-primary-foreground rounded-full"></span>
-                )}
-              </div>
-              <span className="text-[10px] sm:text-xs font-medium mt-1">{item.label}</span>
-            </div>
-          </Link>
-        ))}
-      </div>
-    </nav>
+    <div className="fixed bottom-4 left-4 right-4 z-50 flex justify-center pointer-events-none">
+      <motion.nav 
+        className="flex items-center justify-around bg-background/95 backdrop-blur-lg border border-border rounded-full shadow-lg px-3 py-2 pointer-events-auto"
+        initial={{ y: 100, opacity: 0 }}
+        animate={{ y: 0, opacity: 1 }}
+        transition={{ duration: 0.3 }}
+        style={{ minWidth: '320px', maxWidth: '90vw' }}
+      >
+        {navItems.map(({ path, Icon, label }, index) => {
+          const isActive = location.pathname === path;
+          return (
+            <motion.button
+              key={path}
+              className={`flex flex-col items-center justify-center p-2 rounded-full transition-all duration-300 min-w-0 ${
+                isActive 
+                  ? 'text-primary bg-primary/10 scale-110'
+                  : 'text-muted-foreground hover:text-foreground hover:bg-accent'
+              }`}
+              onClick={() => navigate(path)}
+              aria-label={label}
+              whileHover={{ y: -2 }}
+              whileTap={{ scale: 0.95 }}
+            >
+              <Icon 
+                size={18} 
+                className={`transition-all duration-300 ${
+                  isActive ? 'scale-110' : ''
+                }`} 
+              />
+              <span className="text-[10px] mt-1 font-medium truncate max-w-12">
+                {label}
+              </span>
+            </motion.button>
+          );
+        })}
+      </motion.nav>
+    </div>
   );
 };
 
