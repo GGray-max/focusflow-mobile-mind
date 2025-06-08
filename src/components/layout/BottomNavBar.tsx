@@ -1,5 +1,5 @@
 
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import { ListTodo, Clock, BarChart, Settings, PieChart, Calendar, Target } from 'lucide-react';
@@ -9,6 +9,10 @@ const BottomNavBar: React.FC = () => {
   const navigate = useNavigate();
   const location = useLocation();
   const { theme } = useTheme();
+  
+  // State for scroll tracking and visibility
+  const [lastScrollY, setLastScrollY] = useState(0);
+  const [isVisible, setIsVisible] = useState(true);
 
   // Navigation items matching MobileLayout
   const navItems = [
@@ -21,10 +25,40 @@ const BottomNavBar: React.FC = () => {
     { path: '/settings', Icon: Settings, label: 'Settings' },
   ];
 
+  // Scroll event listener for auto-hide functionality
+  useEffect(() => {
+    const handleScroll = () => {
+      const currentScrollY = window.scrollY;
+      
+      // Always show at the top of the page
+      if (currentScrollY === 0) {
+        setIsVisible(true);
+      } else if (currentScrollY > lastScrollY && currentScrollY > 200) {
+        // Scrolling down and past threshold - hide
+        setIsVisible(false);
+      } else if (currentScrollY < lastScrollY) {
+        // Scrolling up - show
+        setIsVisible(true);
+      }
+      
+      setLastScrollY(currentScrollY);
+    };
+
+    // Add scroll event listener
+    window.addEventListener('scroll', handleScroll, { passive: true });
+
+    // Cleanup function to remove event listener
+    return () => {
+      window.removeEventListener('scroll', handleScroll);
+    };
+  }, [lastScrollY]);
+
   return (
     <div className="fixed bottom-4 left-4 right-4 z-50 flex justify-center pointer-events-none">
       <motion.nav 
-        className="flex items-center justify-around bg-background/95 backdrop-blur-lg border border-border rounded-full shadow-lg px-3 py-2 pointer-events-auto"
+        className={`flex items-center justify-around bg-background/95 backdrop-blur-lg border border-border rounded-full shadow-lg px-3 py-2 pointer-events-auto transition-transform duration-300 ${
+          isVisible ? 'translate-y-0' : 'translate-y-24'
+        }`}
         initial={{ y: 100, opacity: 0 }}
         animate={{ y: 0, opacity: 1 }}
         transition={{ duration: 0.3 }}
