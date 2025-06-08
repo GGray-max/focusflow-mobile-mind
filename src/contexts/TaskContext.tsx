@@ -1,4 +1,3 @@
-
 import React, { createContext, useContext, useReducer, useCallback, useMemo, useEffect } from 'react';
 import { toast } from '@/components/ui/use-toast';
 
@@ -13,6 +12,19 @@ export interface SubTask {
   id: string;
   title: string;
   completed: boolean;
+  createdAt: string;
+}
+
+export interface TaskNote {
+  id: string;
+  content: string;
+  createdAt: string;
+}
+
+export interface TaskLink {
+  id: string;
+  url: string;
+  title: string;
   createdAt: string;
 }
 
@@ -42,10 +54,15 @@ export interface Task {
   totalTimeSpent: number;
   focusSessions: FocusSession[];
   streak?: number;
+  estimatedDuration?: number; // in minutes
+  actualDuration?: number; // in minutes
+  notes: TaskNote[];
+  links: TaskLink[];
+  column?: 'backlog' | 'thisWeek' | 'today' | 'completed';
 }
 
 interface TaskAction {
-  type: 'ADD_TASK' | 'UPDATE_TASK' | 'DELETE_TASK' | 'TOGGLE_TASK' | 'TOGGLE_PRIORITY' | 'ADD_SUBTASK' | 'TOGGLE_SUBTASK' | 'SET_SEARCH_TERM' | 'SET_SORT_BY' | 'SET_FILTERS' | 'SET_PAGE' | 'SET_TASKS_PER_PAGE' | 'ADD_CATEGORY' | 'RESET_TASK_TIME' | 'SET_FILTER_CATEGORY' | 'SET_FILTER_PRIORITY' | 'SET_FILTER_DUE_DATE' | 'SET_FILTER_RECURRING' | 'ADD_FOCUS_TIME';
+  type: 'ADD_TASK' | 'UPDATE_TASK' | 'DELETE_TASK' | 'TOGGLE_TASK' | 'TOGGLE_PRIORITY' | 'ADD_SUBTASK' | 'TOGGLE_SUBTASK' | 'SET_SEARCH_TERM' | 'SET_SORT_BY' | 'SET_FILTERS' | 'SET_PAGE' | 'SET_TASKS_PER_PAGE' | 'ADD_CATEGORY' | 'RESET_TASK_TIME' | 'SET_FILTER_CATEGORY' | 'SET_FILTER_PRIORITY' | 'SET_FILTER_DUE_DATE' | 'SET_FILTER_RECURRING' | 'ADD_FOCUS_TIME' | 'ADD_NOTE' | 'REMOVE_NOTE' | 'ADD_LINK' | 'REMOVE_LINK' | 'SET_ESTIMATED_DURATION' | 'UPDATE_ACTUAL_DURATION' | 'MIGRATE_DATA';
   payload: any;
 }
 
@@ -179,6 +196,98 @@ const taskReducer = (state: TaskState, action: TaskAction): TaskState => {
           } : task
         ),
       };
+    case 'ADD_NOTE':
+      return {
+        ...state,
+        tasks: state.tasks.map((task) =>
+          task.id === action.payload.taskId
+            ? {
+                ...task,
+                notes: [
+                  ...(task.notes || []),
+                  {
+                    id: Date.now().toString(),
+                    content: action.payload.content,
+                    createdAt: new Date().toISOString()
+                  }
+                ]
+              }
+            : task
+        ),
+      };
+    case 'REMOVE_NOTE':
+      return {
+        ...state,
+        tasks: state.tasks.map((task) =>
+          task.id === action.payload.taskId
+            ? {
+                ...task,
+                notes: (task.notes || []).filter(note => note.id !== action.payload.noteId)
+              }
+            : task
+        ),
+      };
+    case 'ADD_LINK':
+      return {
+        ...state,
+        tasks: state.tasks.map((task) =>
+          task.id === action.payload.taskId
+            ? {
+                ...task,
+                links: [
+                  ...(task.links || []),
+                  {
+                    id: Date.now().toString(),
+                    url: action.payload.url,
+                    title: action.payload.title,
+                    createdAt: new Date().toISOString()
+                  }
+                ]
+              }
+            : task
+        ),
+      };
+    case 'REMOVE_LINK':
+      return {
+        ...state,
+        tasks: state.tasks.map((task) =>
+          task.id === action.payload.taskId
+            ? {
+                ...task,
+                links: (task.links || []).filter(link => link.id !== action.payload.linkId)
+              }
+            : task
+        ),
+      };
+    case 'SET_ESTIMATED_DURATION':
+      return {
+        ...state,
+        tasks: state.tasks.map((task) =>
+          task.id === action.payload.taskId
+            ? { ...task, estimatedDuration: action.payload.duration }
+            : task
+        ),
+      };
+    case 'UPDATE_ACTUAL_DURATION':
+      return {
+        ...state,
+        tasks: state.tasks.map((task) =>
+          task.id === action.payload.taskId
+            ? { ...task, actualDuration: (task.actualDuration || 0) + action.payload.duration }
+            : task
+        ),
+      };
+    case 'MIGRATE_DATA':
+      return {
+        ...state,
+        tasks: state.tasks.map((task) => ({
+          ...task,
+          notes: task.notes || [],
+          links: task.links || [],
+          estimatedDuration: task.estimatedDuration || 25,
+          actualDuration: task.actualDuration || 0
+        })),
+      };
     default:
       return state;
   }
@@ -211,6 +320,13 @@ interface TaskContextType {
   setFilterDueDate: (dueDate?: string) => void;
   setFilterRecurring: (recurring: boolean) => void;
   categories: string[];
+  addNote: (taskId: string, content: string) => void;
+  removeNote: (taskId: string, noteId: string) => void;
+  addLink: (taskId: string, url: string, title: string) => void;
+  removeLink: (taskId: string, linkId: string) => void;
+  setEstimatedDuration: (taskId: string, duration: number) => void;
+  updateActualDuration: (taskId: string, duration: number) => void;
+  migrateData: () => void;
 }
 
 const TaskContext = createContext<TaskContextType | undefined>(undefined);
@@ -357,6 +473,45 @@ export const TaskProvider: React.FC<{ children: React.ReactNode }> = ({ children
     dispatch({ type: 'SET_FILTER_RECURRING', payload: recurring });
   }, []);
 
+  const addNote = useCallback((taskId: string, content: string) => {
+    dispatch({ type: 'ADD_NOTE', payload: { taskId, content } });
+  }, []);
+
+  const removeNote = useCallback((taskId: string, noteId: string) => {
+    dispatch({ type: 'REMOVE_NOTE', payload: { taskId, noteId } });
+  }, []);
+
+  const addLink = useCallback((taskId: string, url: string, title: string) => {
+    dispatch({ type: 'ADD_LINK', payload: { taskId, url, title } });
+  }, []);
+
+  const removeLink = useCallback((taskId: string, linkId: string) => {
+    dispatch({ type: 'REMOVE_LINK', payload: { taskId, linkId } });
+  }, []);
+
+  const setEstimatedDuration = useCallback((taskId: string, duration: number) => {
+    dispatch({ type: 'SET_ESTIMATED_DURATION', payload: { taskId, duration } });
+  }, []);
+
+  const updateActualDuration = useCallback((taskId: string, duration: number) => {
+    dispatch({ type: 'UPDATE_ACTUAL_DURATION', payload: { taskId, duration } });
+  }, []);
+
+  const migrateData = useCallback(() => {
+    dispatch({ type: 'MIGRATE_DATA', payload: {} });
+  }, []);
+
+  // Migration on first load
+  useEffect(() => {
+    const hasNewFeatures = state.tasks.some(task => 
+      task.hasOwnProperty('notes') && task.hasOwnProperty('links')
+    );
+    
+    if (state.tasks.length > 0 && !hasNewFeatures) {
+      migrateData();
+    }
+  }, [state.tasks.length, migrateData]);
+
   const getFilteredAndSortedTasks = useCallback(() => {
     let filteredTasks = [...state.tasks];
 
@@ -455,7 +610,48 @@ export const TaskProvider: React.FC<{ children: React.ReactNode }> = ({ children
     setFilterDueDate,
     setFilterRecurring,
     categories: state.categories,
-  }), [state, addTask, updateTask, deleteTask, toggleTask, toggleComplete, togglePriority, addSubtask, toggleSubtask, setSearchTerm, setSortBy, setSort, setFilters, setPage, setTasksPerPage, getFilteredAndSortedTasks, getPaginatedTasks, getTotalPages, addCategory, resetTaskTime, addFocusTime, setFilterCategory, setFilterPriority, setFilterDueDate, setFilterRecurring, state.categories]);
+    addNote,
+    removeNote,
+    addLink,
+    removeLink,
+    setEstimatedDuration,
+    updateActualDuration,
+    migrateData,
+  }), [
+    state,
+    addTask,
+    updateTask,
+    deleteTask,
+    toggleTask,
+    toggleComplete,
+    togglePriority,
+    addSubtask,
+    toggleSubtask,
+    setSearchTerm,
+    setSortBy,
+    setSort,
+    setFilters,
+    setPage,
+    setTasksPerPage,
+    getFilteredAndSortedTasks,
+    getPaginatedTasks,
+    getTotalPages,
+    addCategory,
+    resetTaskTime,
+    addFocusTime,
+    setFilterCategory,
+    setFilterPriority,
+    setFilterDueDate,
+    setFilterRecurring,
+    state.categories,
+    addNote,
+    removeNote,
+    addLink,
+    removeLink,
+    setEstimatedDuration,
+    updateActualDuration,
+    migrateData,
+  ]);
 
   return (
     <TaskContext.Provider value={value}>

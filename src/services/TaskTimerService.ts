@@ -1,5 +1,5 @@
-
-import { Task, TaskSession, TaskDuration } from '@/types/TaskTypes';
+import { Task } from '@/contexts/TaskContext';
+import { TaskSession, TaskDuration } from '@/types/TaskTypes';
 
 export class TaskTimerService {
   private static instance: TaskTimerService;
