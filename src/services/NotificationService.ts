@@ -1,3 +1,4 @@
+
 import { LocalNotifications, ScheduleOptions, ActionPerformed, Channel, LocalNotificationsPlugin } from '@capacitor/local-notifications';
 import { Capacitor } from '@capacitor/core';
 import { Filesystem, Directory } from '@capacitor/filesystem';
@@ -36,6 +37,9 @@ class NotificationService {
       lights: true
     }
   ];
+
+  private permissionRequested = false;
+  private hasPermission = false;
 
   constructor() {
     this.initializeChannels();
@@ -116,20 +120,56 @@ class NotificationService {
     }
   }
 
-  async requestPermissions() {
+  async requestPermissions(): Promise<boolean> {
     try {
-      const permissionState = await LocalNotifications.requestPermissions();
-      console.log('Notification permission state:', permissionState);
-      
-      if (permissionState.display === 'denied') {
-        toast({
-          title: "Notifications disabled",
-          description: "Please enable notifications in your device settings for task reminders.",
-          variant: "destructive"
-        });
+      // Don't request permissions repeatedly if already denied
+      if (this.permissionRequested && !this.hasPermission) {
+        console.log('Permissions already requested and denied');
+        return false;
       }
+
+      // Check current permission status first
+      const currentStatus = await LocalNotifications.checkPermissions();
+      console.log('Current notification permission status:', currentStatus);
       
-      return permissionState.display === 'granted';
+      if (currentStatus.display === 'granted') {
+        this.hasPermission = true;
+        return true;
+      }
+
+      // Only request if not already denied
+      if (currentStatus.display === 'prompt') {
+        this.permissionRequested = true;
+        const permissionState = await LocalNotifications.requestPermissions();
+        console.log('Notification permission request result:', permissionState);
+        
+        this.hasPermission = permissionState.display === 'granted';
+        
+        if (!this.hasPermission) {
+          // Only show toast once when permission is first denied
+          if (!localStorage.getItem('notificationPermissionDenied')) {
+            localStorage.setItem('notificationPermissionDenied', 'true');
+            toast({
+              title: "Notifications disabled",
+              description: "To receive task reminders, please enable notifications in your device settings and refresh the app.",
+              variant: "destructive"
+            });
+          }
+        } else {
+          // Clear the denial flag if permission is granted
+          localStorage.removeItem('notificationPermissionDenied');
+        }
+        
+        return this.hasPermission;
+      }
+
+      // Permission was already denied
+      if (currentStatus.display === 'denied') {
+        this.hasPermission = false;
+        return false;
+      }
+
+      return false;
     } catch (error) {
       console.error('Error requesting notification permissions:', error);
       return false;
@@ -137,10 +177,13 @@ class NotificationService {
   }
 
   async scheduleTaskNotification(taskId: string, title: string, body: string, scheduledTime: Date, isUrgent: boolean = false): Promise<void> {
-    const hasPermission = await this.requestPermissions();
+    // Check permission before attempting to schedule
+    const hasPermission = await this.checkAndRequestPermission();
     
     if (!hasPermission) {
-      console.warn('Notification permission not granted');
+      console.warn('Cannot schedule notification: permission not granted');
+      // Show fallback notification in browser
+      this.showBrowserNotification(title, body);
       return;
     }
     
@@ -194,11 +237,33 @@ class NotificationService {
     }
   }
 
+  private async checkAndRequestPermission(): Promise<boolean> {
+    if (this.hasPermission) {
+      return true;
+    }
+
+    return await this.requestPermissions();
+  }
+
+  private showBrowserNotification(title: string, body: string) {
+    // Fallback to browser notifications if available
+    if ('Notification' in window && Notification.permission === 'granted') {
+      new Notification(title, { body, icon: '/favicon.ico' });
+    } else if ('Notification' in window && Notification.permission === 'default') {
+      Notification.requestPermission().then(permission => {
+        if (permission === 'granted') {
+          new Notification(title, { body, icon: '/favicon.ico' });
+        }
+      });
+    }
+  }
+
   async scheduleTimerNotification(title: string, body: string, scheduledTime: Date) {
-    const hasPermission = await this.requestPermissions();
+    const hasPermission = await this.checkAndRequestPermission();
     
     if (!hasPermission) {
-      console.warn('Notification permission not granted');
+      console.warn('Cannot schedule timer notification: permission not granted');
+      this.showBrowserNotification(title, body);
       return false;
     }
     
@@ -256,8 +321,10 @@ class NotificationService {
 
   async cancelAllNotifications() {
     try {
-      // Fix: Use cancel with empty notifications array instead of cancelAll which doesn't exist
-      await LocalNotifications.cancel({ notifications: [] });
+      const pending = await LocalNotifications.getPending();
+      if (pending.notifications.length > 0) {
+        await LocalNotifications.cancel({ notifications: pending.notifications });
+      }
       console.log('Cancelled all notifications');
       return true;
     } catch (error) {
@@ -270,7 +337,7 @@ class NotificationService {
   async updateCustomSound(type: 'timer' | 'task', soundName: string) {
     try {
       if (!Capacitor.isNativePlatform()) {
-        return; // Only needed for native platforms
+        return true; // Only needed for native platforms
       }
 
       const channelId = type === 'timer' ? 'timer-notifications' : 'task-notifications';
@@ -299,6 +366,18 @@ class NotificationService {
       console.error(`Error updating ${type} custom sound:`, error);
       return false;
     }
+  }
+
+  // Get current permission status
+  getPermissionStatus(): boolean {
+    return this.hasPermission;
+  }
+
+  // Reset permission request flag (useful for testing)
+  resetPermissionState() {
+    this.permissionRequested = false;
+    this.hasPermission = false;
+    localStorage.removeItem('notificationPermissionDenied');
   }
 }
 

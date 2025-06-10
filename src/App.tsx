@@ -35,20 +35,28 @@ const App = () => {
   const [showLoader, setShowLoader] = useState(true);
 
   useEffect(() => {
-    // Initialize notifications with defensive programming
+    // Initialize notifications with better error handling
     const initializeNotifications = async () => {
       try {
-        // Check if Capacitor is available
-        if (typeof Capacitor !== 'undefined' && Capacitor.isPluginAvailable('LocalNotifications')) {
-          console.log('Requesting notification permissions...');
-          const hasPermission = await NotificationService.requestPermissions();
-          console.log('Notification permissions:', hasPermission ? 'granted' : 'denied');
+        // Only initialize native notifications if on a supported platform
+        if (Capacitor.isNativePlatform() && Capacitor.isPluginAvailable('LocalNotifications')) {
+          console.log('Initializing native notifications...');
+          await NotificationService.initializeChannels();
+          
+          // Don't automatically request permissions on app start
+          // Let the user trigger permission request when needed
+          const currentStatus = await NotificationService.requestPermissions();
+          console.log('Initial notification setup complete. Permission granted:', currentStatus);
         } else {
-          console.info('Notifications plugin not available or not a native platform');
+          console.log('Running on web platform - native notifications not available');
+          // For web, we can still use browser notifications
+          if ('Notification' in window) {
+            console.log('Browser notifications available');
+          }
         }
       } catch (error) {
         console.error('Error initializing notifications:', error);
-        // Continue execution despite notification errors
+        // Don't prevent app from loading if notifications fail
       }
     };
 
