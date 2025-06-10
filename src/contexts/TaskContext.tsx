@@ -293,7 +293,7 @@ const taskReducer = (state: TaskState, action: TaskAction): TaskState => {
   }
 };
 
-interface TaskContextType {
+export interface TaskContextType {
   state: TaskState;
   addTask: (task: Omit<Task, 'id' | 'createdAt'>) => void;
   updateTask: (taskId: string, updates: Partial<Task>) => void;
@@ -659,3 +659,5 @@ export const TaskProvider: React.FC<{ children: React.ReactNode }> = ({ children
     </TaskContext.Provider>
   );
 };
+
+export default TaskProvider;
