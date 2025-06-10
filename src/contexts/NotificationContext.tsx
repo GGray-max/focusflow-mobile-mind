@@ -1,7 +1,6 @@
-
 import React, { createContext, useContext, useState, useEffect } from 'react';
 import { LocalNotifications } from '@capacitor/local-notifications';
-import { useToast } from '@/components/ui/use-toast';
+import { useToast } from '@/hooks/use-toast';
 import { Capacitor } from '@capacitor/core';
 import NotificationService from '../services/NotificationService';
 
@@ -14,6 +13,8 @@ type Notification = {
   scheduleAt?: string;
 };
 
+type NotificationPermissionStatus = 'unknown' | 'granted' | 'denied' | 'prompt';
+
 interface NotificationContextType {
   notifications: Notification[];
   urgentNotification: Notification | null;
@@ -22,17 +23,32 @@ interface NotificationContextType {
   cancelNotification: (id: number) => Promise<boolean>;
   requestPermissions: () => Promise<void>;
   hasPermission: boolean;
-  permissionStatus: 'unknown' | 'granted' | 'denied' | 'prompt';
+  permissionStatus: NotificationPermissionStatus;
   isNativePlatform: boolean;
 }
 
 const NotificationContext = createContext<NotificationContextType | undefined>(undefined);
 
+// Helper function to normalize permission status
+const normalizePermissionStatus = (status: string): NotificationPermissionStatus => {
+  switch (status) {
+    case 'granted':
+      return 'granted';
+    case 'denied':
+      return 'denied';
+    case 'prompt':
+    case 'prompt-with-rationale':
+      return 'prompt';
+    default:
+      return 'unknown';
+  }
+};
+
 export const NotificationProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const [notifications, setNotifications] = useState<Notification[]>([]);
   const [urgentNotification, setUrgentNotification] = useState<Notification | null>(null);
   const [hasPermission, setHasPermission] = useState(false);
-  const [permissionStatus, setPermissionStatus] = useState<'unknown' | 'granted' | 'denied' | 'prompt'>('unknown');
+  const [permissionStatus, setPermissionStatus] = useState<NotificationPermissionStatus>('unknown');
   const [isNativePlatform] = useState(Capacitor.isNativePlatform());
   const { toast } = useToast();
 
@@ -49,8 +65,9 @@ export const NotificationProvider: React.FC<{ children: React.ReactNode }> = ({ 
           try {
             const status = await LocalNotifications.checkPermissions();
             console.log('Initial permission check:', status);
-            setPermissionStatus(status.display);
-            setHasPermission(status.display === 'granted');
+            const normalizedStatus = normalizePermissionStatus(status.display);
+            setPermissionStatus(normalizedStatus);
+            setHasPermission(normalizedStatus === 'granted');
           } catch (error) {
             console.error('Error checking initial permissions:', error);
             setPermissionStatus('unknown');
@@ -60,8 +77,9 @@ export const NotificationProvider: React.FC<{ children: React.ReactNode }> = ({ 
           // For web platform, check browser notification permission
           if ('Notification' in window) {
             const permission = Notification.permission;
-            setPermissionStatus(permission as any);
-            setHasPermission(permission === 'granted');
+            const normalizedStatus = normalizePermissionStatus(permission);
+            setPermissionStatus(normalizedStatus);
+            setHasPermission(normalizedStatus === 'granted');
           }
         }
       } catch (error) {
@@ -82,7 +100,8 @@ export const NotificationProvider: React.FC<{ children: React.ReactNode }> = ({ 
         
         // Update permission status
         const status = await LocalNotifications.checkPermissions();
-        setPermissionStatus(status.display);
+        const normalizedStatus = normalizePermissionStatus(status.display);
+        setPermissionStatus(normalizedStatus);
         
         if (!result) {
           toast({
@@ -100,10 +119,11 @@ export const NotificationProvider: React.FC<{ children: React.ReactNode }> = ({ 
         // Handle web notifications
         if ('Notification' in window) {
           const permission = await Notification.requestPermission();
-          setPermissionStatus(permission as any);
-          setHasPermission(permission === 'granted');
+          const normalizedStatus = normalizePermissionStatus(permission);
+          setPermissionStatus(normalizedStatus);
+          setHasPermission(normalizedStatus === 'granted');
           
-          if (permission === 'granted') {
+          if (normalizedStatus === 'granted') {
             toast({
               title: 'Browser Notifications Enabled',
               description: 'You will receive notifications in your browser.',
@@ -227,3 +247,5 @@ export const useNotification = () => {
   }
   return context;
 };
+
+export default NotificationProvider;
